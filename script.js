@@ -1,346 +1,339 @@
-/* ============================================
-   INFINITE VYBEFLIX — PORTFOLIO BOOK v3.0
-   Complete 3D Flip-Book Engine
-   ============================================ */
-
+const book = document.getElementById('book');
 const sheets = document.querySelectorAll('.sheet');
-const totalSheets = sheets.length;
+const indicator = document.getElementById('page-indicator');
 let currentSheet = 0;
+const totalSheets = 8;
 let isFlipping = false;
 
-/* ─── LOADING ─── */
-function initLoad() {
-  const screen = document.getElementById('loading');
-  const pct = document.getElementById('loadpct');
-  let p = 0;
-  const iv = setInterval(() => {
-    p += Math.floor(Math.random() * 8) + 2;
-    if (p >= 100) {
-      p = 100;
-      clearInterval(iv);
-      setTimeout(() => {
-        screen.classList.add('hidden');
-        initType();
-      }, 400);
-    }
-    pct.textContent = p + '%';
-  }, 80);
+/* ═══════ AUDIO — Page Flip Sound ═══════ */
+let audioCtx = null;
+function playFlipSound() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.15);
+  } catch(e) {}
 }
 
-/* ─── TYPING EFFECT ─── */
-function initType() {
-  const text = "Building the future of AI infrastructure — from intelligent code editors to autonomous agents and unlimited API gateways.";
-  const el = document.getElementById('typeText');
-  if (!el) return;
-  let i = 0;
-  function type() {
-    if (i < text.length) {
-      el.textContent = text.substring(0, i + 1);
-      i++;
-      setTimeout(type, 35);
-    }
-  }
-  setTimeout(type, 600);
+/* ═══════ GENERATE STARS ═══════ */
+const starsLayer = document.getElementById('stars-layer');
+
+for (let i = 0; i < 180; i++) {
+  const star = document.createElement('div');
+  star.className = 'star';
+  const size = 1 + Math.random() * 2.5;
+  star.style.width = size + 'px';
+  star.style.height = size + 'px';
+  star.style.left = Math.random() * 100 + '%';
+  star.style.top = Math.random() * 100 + '%';
+  star.style.setProperty('--min-op', (0.2 + Math.random() * 0.3).toFixed(2));
+  star.style.setProperty('--max-op', (0.6 + Math.random() * 0.4).toFixed(2));
+  star.style.setProperty('--dur', (2 + Math.random() * 4) + 's');
+  star.style.animationDelay = Math.random() * 4 + 's';
+  starsLayer.appendChild(star);
 }
 
-/* ─── PARTICLES ─── */
-function initParticles() {
-  const c = document.getElementById('pCanvas');
-  const ctx = c.getContext('2d');
-  let pts = [];
-
-  function resize() {
-    c.width = window.innerWidth;
-    c.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  const count = Math.min(80, Math.floor(window.innerWidth / 15));
-  for (let i = 0; i < count; i++) {
-    pts.push({
-      x: Math.random() * c.width,
-      y: Math.random() * c.height,
-      s: Math.random() * 2 + .5,
-      vx: (Math.random() - .5) * .4,
-      vy: (Math.random() - .5) * .4,
-      o: Math.random() * .4 + .1,
-      col: Math.random() > .5 ? '56,189,248' : '212,175,55'
-    });
-  }
-
-  function draw() {
-    ctx.clearRect(0, 0, c.width, c.height);
-    pts.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      if (p.x < 0 || p.x > c.width || p.y < 0 || p.y > c.height) {
-        p.x = Math.random() * c.width;
-        p.y = Math.random() * c.height;
-      }
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(' + p.col + ',' + p.o + ')';
-      ctx.fill();
-    });
-    for (let i = 0; i < pts.length; i++) {
-      for (let j = i + 1; j < pts.length; j++) {
-        const dx = pts[i].x - pts[j].x;
-        const dy = pts[i].y - pts[j].y;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        if (d < 120) {
-          ctx.beginPath();
-          ctx.moveTo(pts[i].x, pts[i].y);
-          ctx.lineTo(pts[j].x, pts[j].y);
-          ctx.strokeStyle = 'rgba(56,189,248,' + (0.06 * (1 - d / 120)) + ')';
-          ctx.lineWidth = .5;
-          ctx.stroke();
-        }
-      }
-    }
-    requestAnimationFrame(draw);
-  }
-  draw();
+for (let i = 0; i < 6; i++) {
+  const shoot = document.createElement('div');
+  shoot.className = 'shooting-star';
+  shoot.style.left = (Math.random() * 60) + '%';
+  shoot.style.top = (Math.random() * 40) + '%';
+  shoot.style.setProperty('--shoot-dur', (5 + Math.random() * 7) + 's');
+  shoot.style.setProperty('--shoot-delay', (Math.random() * 12) + 's');
+  starsLayer.appendChild(shoot);
 }
 
-/* ─── CUSTOM CURSOR ─── */
-function initCursor() {
-  const dot = document.getElementById('cursor');
-  if (window.matchMedia('(pointer: coarse)').matches) return;
-
-  let x = 0, y = 0, tx = 0, ty = 0;
-  document.addEventListener('mousemove', e => {
-    tx = e.clientX;
-    ty = e.clientY;
-  });
-  document.addEventListener('mousedown', () => {
-    dot.style.transform = 'translate(-50%,-50%) scale(0.8)';
-  });
-  document.addEventListener('mouseup', () => {
-    dot.style.transform = 'translate(-50%,-50%) scale(1)';
-  });
-
-  function anim() {
-    x += (tx - x) * .15;
-    y += (ty - y) * .15;
-    dot.style.left = x + 'px';
-    dot.style.top = y + 'px';
-    requestAnimationFrame(anim);
-  }
-  anim();
-
-  const hoverTargets = document.querySelectorAll('a, button, .corner, .corner-back, .ctrl-btn, .zoom-img, .srv-btn, .wa-opt');
-  hoverTargets.forEach(el => {
-    el.addEventListener('mouseenter', () => dot.classList.add('hover'));
-    el.addEventListener('mouseleave', () => dot.classList.remove('hover'));
-  });
+/* ═══════ RESPONSIVE SCALING ═══════ */
+function updateScale() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const bookW = 840;
+  const bookH = 960;
+  const padX = 50;
+  const padY = 80;
+  const scale = Math.min(1, (vw - padX) / bookW, (vh - padY) / bookH);
+  document.documentElement.style.setProperty('--scale', scale);
 }
 
-/* ─── LIGHTBOX ─── */
-function initLightbox() {
-  document.querySelectorAll('.zoom-img').forEach(img => {
-    img.addEventListener('click', e => {
-      e.stopPropagation();
-      const lb = document.getElementById('lightbox');
-      const lbimg = document.getElementById('lbimg');
-      lbimg.src = img.src;
-      lb.classList.add('on');
-    });
-  });
-}
+window.addEventListener('resize', updateScale);
+updateScale();
 
-function closeLightbox() {
-  document.getElementById('lightbox').classList.remove('on');
-}
-
-/* ─── Z-INDEX MANAGEMENT ───
-   This is the critical fix. Each sheet gets a calculated z-index
-   so flipped sheets stack properly on the left and unflipped on the right.
-*/
+/* ═══════ Z-INDEX MANAGEMENT ═══════ */
 function updateZ() {
   sheets.forEach((sheet, i) => {
-    if (i < currentSheet) {
-      // Flipped sheets: stack from bottom (z = 1) to top
+    const isFlipped = sheet.classList.contains('flipped');
+    if (isFlipped) {
       sheet.style.zIndex = i + 1;
     } else {
-      // Unflipped sheets: stack from top (z = total) to bottom
-      sheet.style.zIndex = totalSheets - i;
+      sheet.style.zIndex = (totalSheets - i) * 10;
     }
   });
 }
 
-/* ─── BOOK POSITION ───
-   When closed (sheet 0), shift book left by half page so cover centers.
-   When opened, remove shift so full book is centered.
-*/
-function updateBookPos() {
-  const book = document.getElementById('book');
-  if (currentSheet === 0) {
-    book.classList.add('closed');
-  } else {
-    book.classList.remove('closed');
-  }
+function updateIndicator() {
+  indicator.textContent = 'Sheet ' + (currentSheet + 1) + ' of ' + totalSheets;
 }
 
-/* ─── CONTROLS ─── */
-function updateControls() {
-  document.getElementById('btnPrev').disabled = currentSheet === 0;
-  document.getElementById('btnNext').disabled = currentSheet >= totalSheets;
-  document.getElementById('pageCounter').textContent = currentSheet + ' / ' + totalSheets;
-
-  // Animate skill bars when on skills page (sheet 2 back = after 3 flips)
-  if (currentSheet === 3) {
-    setTimeout(() => {
-      document.querySelectorAll('.sk-bar div').forEach(b => {
-        b.style.width = b.dataset.w + '%';
-      });
-    }, 400);
-  }
-}
-
-/* ─── FLIP NEXT ─── */
+/* ═══════ FLIP FUNCTIONS ═══════ */
 function flipNext() {
-  if (isFlipping || currentSheet >= totalSheets) return;
+  if (currentSheet >= totalSheets || isFlipping) return;
   isFlipping = true;
+  playFlipSound();
 
   const sheet = sheets[currentSheet];
-  // Boost z-index during animation so it passes over everything
-  sheet.style.zIndex = 1000;
+  sheet.style.zIndex = 999;
   sheet.classList.add('flipped');
 
   currentSheet++;
-  updateControls();
+  if (currentSheet > 0) book.classList.add('open');
 
   setTimeout(() => {
     updateZ();
-    updateBookPos();
+    updateDots();
+    updateIndicator();
+    animateSkillBars();
     isFlipping = false;
-  }, 750);
+  }, 1000);
 }
 
-/* ─── FLIP PREV ─── */
 function flipPrev() {
-  if (isFlipping || currentSheet <= 0) return;
+  if (currentSheet <= 0 || isFlipping) return;
   isFlipping = true;
+  playFlipSound();
 
   currentSheet--;
   const sheet = sheets[currentSheet];
-  // Boost z-index during animation
-  sheet.style.zIndex = 1000;
+  sheet.style.zIndex = 999;
   sheet.classList.remove('flipped');
 
-  updateControls();
+  if (currentSheet === 0) book.classList.remove('open');
 
   setTimeout(() => {
     updateZ();
-    updateBookPos();
+    updateDots();
+    updateIndicator();
+    animateSkillBars();
     isFlipping = false;
-  }, 750);
+  }, 1000);
 }
 
-/* ─── GO TO PAGE ─── */
-function goToPage(idx) {
-  if (idx < 0 || idx > totalSheets || isFlipping) return;
-  if (idx > currentSheet) {
-    let i = 0;
-    const iv = setInterval(() => {
-      if (i >= idx - currentSheet) { clearInterval(iv); return; }
-      flipNext();
-      i++;
-    }, 280);
-  } else if (idx < currentSheet) {
-    let i = 0;
-    const iv = setInterval(() => {
-      if (i >= currentSheet - idx) { clearInterval(iv); return; }
-      flipPrev();
-      i++;
-    }, 280);
-  }
-}
+function jumpToSheet(index) {
+  if (index === currentSheet || isFlipping) return;
 
-/* ─── KEYBOARD NAVIGATION ─── */
-document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
-    e.preventDefault();
-    flipNext();
-  }
-  if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
-    e.preventDefault();
-    flipPrev();
-  }
-  if (e.key === 'Escape') {
-    closeLightbox();
-  }
-});
-
-/* ─── SWIPE GESTURES ─── */
-let sx = 0, sy = 0;
-document.addEventListener('touchstart', e => {
-  sx = e.changedTouches[0].screenX;
-  sy = e.changedTouches[0].screenY;
-}, { passive: true });
-
-document.addEventListener('touchend', e => {
-  const ex = e.changedTouches[0].screenX;
-  const dx = sx - ex;
-  const dy = Math.abs(sy - e.changedTouches[0].screenY);
-  if (Math.abs(dx) > 50 && Math.abs(dx) > dy) {
-    if (dx > 0) flipNext();
-    else flipPrev();
-  }
-}, { passive: true });
-
-/* ─── WHATSAPP ─── */
-let waMode = 'prefill';
-
-function setWaMode(el) {
-  document.querySelectorAll('.wa-opt').forEach(o => o.classList.remove('active'));
-  el.classList.add('active');
-  waMode = el.dataset.mode;
-  const prefill = document.getElementById('waPrefill');
-  if (prefill) {
-    prefill.style.display = waMode === 'prefill' ? 'flex' : 'none';
-  }
-  const btnText = document.getElementById('waBtnText');
-  if (btnText) {
-    btnText.textContent = waMode === 'prefill' ? 'Open WhatsApp with Message' : 'Open WhatsApp Chat';
-  }
-}
-
-function openWhatsApp() {
-  const phone = '254116903500';
-  if (waMode === 'prefill') {
-    const name = document.getElementById('waName').value.trim();
-    const msg = document.getElementById('waMsg').value.trim();
-    if (msg) {
-      const full = name ? "Hi, I'm " + name + ". " + msg : msg;
-      window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(full), '_blank');
-    } else {
-      window.open('https://wa.me/' + phone, '_blank');
+  if (index > currentSheet) {
+    let remaining = index - currentSheet;
+    function step() {
+      if (remaining > 0 && !isFlipping) {
+        flipNext();
+        remaining--;
+        if (remaining > 0) setTimeout(step, 400);
+      }
     }
+    step();
   } else {
-    window.open('https://wa.me/' + phone, '_blank');
+    let remaining = currentSheet - index;
+    function step() {
+      if (remaining > 0 && !isFlipping) {
+        flipPrev();
+        remaining--;
+        if (remaining > 0) setTimeout(step, 400);
+      }
+    }
+    step();
   }
 }
 
-/* ─── EMAIL FORM ─── */
-function sendEmail(e) {
-  e.preventDefault();
-  const name = document.getElementById('eName').value;
-  const email = document.getElementById('eEmail').value;
-  const msg = document.getElementById('eMsg').value;
-  const sub = encodeURIComponent('Portfolio Contact from ' + name);
-  const body = encodeURIComponent('Name: ' + name + '\nEmail: ' + email + '\n\nMessage:\n' + msg);
-  window.location.href = 'mailto:aevibron@gmail.com?subject=' + sub + '&body=' + body;
+function updateDots() {
+  document.querySelectorAll('.nav-dot').forEach((dot, i) => {
+    dot.classList.toggle('active', i === currentSheet);
+  });
 }
 
-/* ─── INITIALIZATION ─── */
-document.addEventListener('DOMContentLoaded', () => {
-  initLoad();
-  initParticles();
-  initCursor();
-  initLightbox();
-  updateZ();
-  updateBookPos();
-  updateControls();
+// Initialize
+updateZ();
+updateIndicator();
+
+/* ═══════ KEYBOARD ═══════ */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); flipNext(); }
+  else if (e.key === 'ArrowLeft' || e.key === 'Backspace') { e.preventDefault(); flipPrev(); }
 });
+
+/* ═══════ SWIPE ═══════ */
+let tsX = 0;
+document.addEventListener('touchstart', (e) => { tsX = e.changedTouches[0].screenX; }, { passive: true });
+document.addEventListener('touchend', (e) => {
+  const dx = e.changedTouches[0].screenX - tsX;
+  if (Math.abs(dx) > 50) dx < 0 ? flipNext() : flipPrev();
+}, { passive: true });
+
+/* ═══════ CLICK TO FLIP ═══════ */
+const bookScaler = document.getElementById('book-scaler');
+bookScaler.addEventListener('click', (e) => {
+  if (e.target.closest('.corner') || e.target.closest('a') || e.target.closest('button') || e.target.closest('.screenshot-wrap')) return;
+  const rect = bookScaler.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  if (x > rect.width * 0.55) flipNext();
+  else if (x < rect.width * 0.45) flipPrev();
+});
+
+/* ═══════ CUSTOM CURSOR ═══════ */
+const cursor = document.getElementById('cursor');
+const spotlight = document.getElementById('cursor-spotlight');
+let mouseX = 0, mouseY = 0;
+let cursorX = 0, cursorY = 0;
+
+if (cursor && spotlight) {
+  document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    spotlight.style.left = mouseX + 'px';
+    spotlight.style.top = mouseY + 'px';
+  });
+
+  function animateCursor() {
+    cursorX += (mouseX - cursorX) * 0.15;
+    cursorY += (mouseY - cursorY) * 0.15;
+    cursor.style.left = cursorX + 'px';
+    cursor.style.top = cursorY + 'px';
+    requestAnimationFrame(animateCursor);
+  }
+  animateCursor();
+
+  document.querySelectorAll('a, button, .corner, .nav-dot, .screenshot-wrap, .project-card, .service-card').forEach(el => {
+    el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+    el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+  });
+
+  document.addEventListener('mousedown', () => {
+    cursor.classList.add('click');
+    setTimeout(() => cursor.classList.remove('click'), 150);
+  });
+}
+
+/* ═══════ CLICK RIPPLES ═══════ */
+document.addEventListener('click', (e) => {
+  if (window.matchMedia('(pointer: coarse)').matches) return;
+  const ripple = document.createElement('div');
+  ripple.className = 'ripple';
+  ripple.style.left = (e.clientX - 100) + 'px';
+  ripple.style.top = (e.clientY - 100) + 'px';
+  document.body.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 600);
+});
+
+/* ═══════ 3D TILT ON MOUSE MOVE ═══════ */
+let tiltRAF = null;
+bookScaler.addEventListener('mousemove', (e) => {
+  if (tiltRAF) cancelAnimationFrame(tiltRAF);
+  tiltRAF = requestAnimationFrame(() => {
+    const rect = bookScaler.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    bookScaler.style.transform = `scale(var(--scale)) rotateY(${x * 4}deg) rotateX(${-y * 4}deg)`;
+  });
+});
+
+bookScaler.addEventListener('mouseleave', () => {
+  bookScaler.style.transform = 'scale(var(--scale)) rotateY(0deg) rotateX(0deg)';
+});
+
+/* ═══════ SKILL BAR ANIMATION ═══════ */
+function animateSkillBars() {
+  document.querySelectorAll('.skill-fill').forEach(bar => {
+    bar.classList.remove('animate');
+    void bar.offsetWidth;
+    bar.classList.add('animate');
+  });
+}
+
+/* ═══════ LIGHTBOX ═══════ */
+const lightbox = document.getElementById('lightbox');
+const lbimg = document.getElementById('lbimg');
+
+function openLightbox(src) {
+  lbimg.src = src;
+  lightbox.classList.add('active');
+}
+
+function closeLightbox() {
+  lightbox.classList.remove('active');
+}
+
+lightbox.addEventListener('click', closeLightbox);
+
+/* ═══════ API KEY MODAL ═══════ */
+const apiModal = document.getElementById('api-modal');
+const apiUseCase = document.getElementById('api-usecase');
+
+function openApiModal() {
+  apiModal.classList.add('active');
+  if (apiUseCase) apiUseCase.value = '';
+}
+
+function closeApiModal() {
+  apiModal.classList.remove('active');
+}
+
+function requestApiKey() {
+  const useCase = apiUseCase ? apiUseCase.value.trim() : '';
+  const msg = `Hello Aevibron, I would like to request API access for the Aevibron Gateway.${useCase ? ' Use case: ' + useCase : ''}`;
+  window.open('https://wa.me/254116903500?text=' + encodeURIComponent(msg), '_blank');
+  closeApiModal();
+}
+
+/* ═══════ WELCOME POPUP ═══════ */
+const welcomePopup = document.getElementById('welcome-popup');
+const welcomeType = document.getElementById('welcome-type');
+
+function typeWriter(text, el, speed = 60) {
+  el.textContent = '';
+  let i = 0;
+  function type() {
+    if (i < text.length) {
+      el.textContent += text.charAt(i);
+      i++;
+      setTimeout(type, speed);
+    }
+  }
+  type();
+}
+
+function dismissWelcome() {
+  welcomePopup.classList.remove('active');
+  localStorage.setItem('aevibron-welcome-seen', '1');
+}
+
+if (welcomePopup && welcomeType) {
+  if (!localStorage.getItem('aevibron-welcome-seen')) {
+    setTimeout(() => {
+      welcomePopup.classList.add('active');
+      typeWriter('Nothing is impossible. Welcome to my world.', welcomeType, 55);
+    }, 800);
+  }
+}
+
+/* ═══════ HOLOGRAPHIC CARD BORDERS ═══════ */
+function addHoloShine() {
+  document.querySelectorAll('.service-card, .project-card').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      card.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(212,175,55,.08), rgba(255,255,255,.03))`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.background = 'rgba(255,255,255,.03)';
+    });
+  });
+}
+addHoloShine();
