@@ -2,806 +2,1002 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Infinite Vybeflix — Portfolio Book</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="style.css">
+<style>
+:root{
+  --pw:420px;--ph:600px;
+  --gold:#d4af37;--amber:#fbbf24;--cyan:#38bdf8;
+  --bg:#060a1a;
+  --page:linear-gradient(145deg,#0c1220 0%,#141e33 50%,#0c1220 100%);
+  --page-alt:linear-gradient(145deg,#0f172a 0%,#1a2744 50%,#0f172a 100%);
+  --card:rgba(30,41,59,.55);--card-border:rgba(148,163,184,.1);
+  --text:#f1f5f9;--text2:#cbd5e1;--muted:#94a3b8;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+body{cursor:none}
+
+/* Loading */
+.loading{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#060a1a,#0f172a,#1e1b4b);transition:opacity .8s,visibility .8s}
+.loading.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.loading img{width:90px;height:90px;object-fit:cover;border-radius:18px;margin-bottom:20px;box-shadow:0 0 50px rgba(56,189,248,.25);animation:lf 2.5s ease-in-out infinite}
+@keyframes lf{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.loading h2{font-family:'Playfair Display',serif;font-size:1.6rem;background:linear-gradient(90deg,#fff,var(--gold),#fff);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:sh 2s linear infinite}
+@keyframes sh{to{background-position:200% center}}
+.loading p{font-size:.7rem;color:var(--muted);letter-spacing:4px;text-transform:uppercase;margin:8px 0 28px}
+.loadbar{width:180px;height:3px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.loadbar div{height:100%;width:0%;background:linear-gradient(90deg,var(--cyan),var(--gold));border-radius:3px;animation:lfi 2s ease-out forwards}
+@keyframes lfi{0%{width:0}50%{width:70%}100%{width:100%}}
+.loadpct{font-size:.7rem;color:var(--muted);margin-top:10px;font-variant-numeric:tabular-nums}
+
+/* Cursor */
+.cursor{position:fixed;top:0;left:0;width:10px;height:10px;background:var(--gold);border-radius:50%;pointer-events:none;z-index:100000;transform:translate(-50%,-50%);transition:width .2s,height .2s,background .2s;mix-blend-mode:difference}
+.cursor.hover{width:36px;height:36px;background:rgba(212,175,55,.25);border:2px solid var(--gold)}
+@media(pointer:coarse){.cursor{display:none}body{cursor:auto}}
+
+/* Particles */
+#pCanvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* Grain */
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* Lightbox */
+.lightbox{position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s ease}
+.lightbox.on{opacity:1;pointer-events:all}
+.lightbox .lb-back{position:absolute;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(12px)}
+.lightbox img{position:relative;max-width:88vw;max-height:82vh;object-fit:contain;border-radius:12px;box-shadow:0 30px 100px rgba(0,0,0,.7);transform:scale(.88);transition:transform .5s cubic-bezier(.34,1.56,.64,1)}
+.lightbox.on img{transform:scale(1)}
+
+/* Header */
+.site-header{position:fixed;top:0;left:0;right:0;z-index:100;text-align:center;padding:18px 10px;pointer-events:none}
+.site-header h1{font-family:'Playfair Display',serif;font-size:1.15rem;letter-spacing:6px;text-transform:uppercase;color:var(--gold);text-shadow:0 0 30px rgba(212,175,55,.2)}
+.site-header p{font-size:.6rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-top:4px}
+
+/* Book */
+.book-stage{position:relative;z-index:10;width:100%;height:100vh;display:flex;align-items:center;justify-content:center;perspective:1500px;padding:70px 0 90px}
+.book{position:relative;width:calc(var(--pw)*2);height:var(--ph);transform-style:preserve-3d;transition:transform .6s cubic-bezier(.45,.05,.25,1)}
+.book.closed{transform:translateX(calc(var(--pw)/-2))}
+.book::before{content:'';position:absolute;top:1%;left:50%;width:3px;height:98%;background:linear-gradient(180deg,rgba(0,0,0,.4),rgba(0,0,0,.6),rgba(0,0,0,.4));transform:translateX(-50%);z-index:0;border-radius:2px}
+.book::after{content:'';position:absolute;inset:-30px;background:radial-gradient(ellipse at 50% 50%,rgba(56,189,248,.06) 0%,transparent 60%);z-index:-1;pointer-events:none}
+
+/* Sheet */
+.sheet{position:absolute;top:0;left:var(--pw);width:var(--pw);height:var(--ph);transform-style:preserve-3d;transform-origin:left center;transition:transform .75s cubic-bezier(.45,.05,.25,1)}
+.sheet.flipped{transform:rotateY(-180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;overflow:hidden;border-radius:0 6px 6px 0}
+.face.front{background:var(--page);border-left:1px solid rgba(148,163,184,.06)}
+.face.back{transform:rotateY(180deg);border-radius:6px 0 0 6px;background:var(--page-alt);border-right:1px solid rgba(148,163,184,.06)}
+.face.front::after{content:'';position:absolute;top:0;left:0;width:20px;height:100%;background:linear-gradient(270deg,rgba(0,0,0,.3),transparent);pointer-events:none;z-index:5}
+.face.back::after{content:'';position:absolute;top:0;right:0;width:20px;height:100%;background:linear-gradient(90deg,rgba(0,0,0,.3),transparent);pointer-events:none;z-index:5}
+.page-inner{position:relative;z-index:2;padding:28px 24px;height:100%;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(148,163,184,.12) transparent}
+.page-inner::-webkit-scrollbar{width:3px}
+.page-inner::-webkit-scrollbar-thumb{background:rgba(148,163,184,.12);border-radius:2px}
+.page-left{transform:scaleX(-1);height:100%}
+
+/* Cover */
+.cover-face{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 30px;background:linear-gradient(145deg,#0a0e27 0%,#0f172a 40%,#1a1540 100%)}
+.cover-face::before{content:'';position:absolute;inset:10px;border:1px solid rgba(212,175,55,.12);border-radius:4px;pointer-events:none}
+.cover-face::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(56,189,248,.06),transparent 60%);pointer-events:none}
+.cover-face img{width:100px;height:100px;object-fit:cover;border-radius:20px;margin-bottom:16px;box-shadow:0 10px 40px rgba(0,0,0,.5),0 0 0 1px rgba(212,175,55,.15)}
+.cover-label{font-size:.6rem;color:var(--gold);letter-spacing:5px;text-transform:uppercase;margin-bottom:8px}
+.cover-name{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;color:#fff;margin-bottom:4px;text-shadow:0 2px 20px rgba(0,0,0,.4)}
+.cover-role{font-size:.75rem;color:var(--muted);margin-bottom:14px}
+.cover-tagline{font-size:.8rem;color:var(--text2);line-height:1.6;max-width:280px;margin-bottom:22px;min-height:60px}
+.cover-tagline .cblink{display:inline-block;width:2px;height:14px;background:var(--gold);animation:cb 1s infinite;margin-left:2px;vertical-align:middle}
+@keyframes cb{0%,100%{opacity:1}50%{opacity:0}}
+.cover-btn{padding:10px 22px;border-radius:8px;font-size:.72rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;border:none;cursor:pointer;margin:0 5px 8px;transition:all .3s}
+.cover-btn.primary{background:linear-gradient(135deg,var(--gold),#b8941f);color:#000;box-shadow:0 4px 20px rgba(212,175,55,.25)}
+.cover-btn.primary:hover{transform:translateY(-2px);box-shadow:0 6px 25px rgba(212,175,55,.35)}
+.cover-btn.secondary{background:transparent;color:var(--text2);border:1px solid rgba(148,163,184,.25)}
+.cover-btn.secondary:hover{border-color:var(--gold);color:var(--gold)}
+
+/* Corners */
+.corner{position:absolute;bottom:0;right:0;width:44px;height:44px;cursor:pointer;z-index:10;transition:opacity .3s}
+.corner::before{content:'';position:absolute;bottom:4px;right:4px;width:0;height:0;border-style:solid;border-width:0 0 36px 36px;border-color:transparent transparent rgba(212,175,55,.15) transparent;transition:border-color .3s}
+.corner:hover::before{border-color:transparent transparent rgba(212,175,55,.35) transparent}
+.corner-back{position:absolute;bottom:0;left:0;width:44px;height:44px;cursor:pointer;z-index:10;transition:opacity .3s}
+.corner-back::before{content:'';position:absolute;bottom:4px;left:4px;width:0;height:0;border-style:solid;border-width:0 36px 36px 0;border-color:transparent transparent rgba(212,175,55,.15) transparent;transition:border-color .3s}
+.corner-back:hover::before{border-color:transparent transparent rgba(212,175,55,.35) transparent}
+.sheet.flipped .corner{opacity:0;pointer-events:none}
+.sheet:not(.flipped) .corner-back{opacity:0;pointer-events:none}
+
+/* Page title */
+.p-title{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;margin-bottom:16px;background:linear-gradient(90deg,var(--gold),var(--amber));-webkit-background-clip:text;-webkit-text-fill-color:transparent;position:relative;padding-bottom:8px}
+.p-title::after{content:'';position:absolute;bottom:0;left:0;width:40px;height:2px;background:linear-gradient(90deg,var(--gold),transparent);border-radius:1px}
+
+/* Profile */
+.profile-sec{text-align:center;padding-top:8px}
+.profile-sec img{width:90px;height:90px;object-fit:cover;border-radius:50%;margin-bottom:12px;border:3px solid rgba(212,175,55,.2);box-shadow:0 0 30px rgba(56,189,248,.1)}
+.profile-sec .p-name{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:#fff}
+.profile-sec .p-role{font-size:.72rem;color:var(--cyan);margin-bottom:12px}
+.profile-sec .p-bio{font-size:.78rem;color:var(--text2);line-height:1.7;margin-bottom:16px}
+.social-row{display:flex;justify-content:center;gap:10px;margin-bottom:16px}
+.social-row a{width:36px;height:36px;border-radius:50%;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);display:flex;align-items:center;justify-content:center;color:var(--cyan);font-size:.9rem;transition:all .3s;text-decoration:none}
+.social-row a:hover{background:var(--cyan);color:#000;transform:translateY(-2px)}
+.btn-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.btn-row a{padding:8px 16px;border-radius:6px;font-size:.7rem;font-weight:600;text-decoration:none;transition:all .3s;display:inline-flex;align-items:center;gap:6px}
+.btn-row a.primary{background:linear-gradient(135deg,var(--cyan),#0ea5e9);color:#000}
+.btn-row a.primary:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(56,189,248,.3)}
+.btn-row a.outline{border:1px solid rgba(148,163,184,.25);color:var(--text2)}
+.btn-row a.outline:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* Timeline */
+.timeline{display:flex;flex-direction:column;gap:14px}
+.t-item{position:relative;padding-left:20px;border-left:2px solid rgba(212,175,55,.2)}
+.t-item::before{content:'';position:absolute;left:-5px;top:4px;width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px rgba(212,175,55,.4)}
+.t-date{font-size:.65rem;color:var(--cyan);font-weight:600;margin-bottom:3px}
+.t-title{font-size:.82rem;font-weight:700;color:#fff;margin-bottom:2px}
+.t-comp{font-size:.68rem;color:var(--muted);margin-bottom:4px}
+.t-desc{font-size:.72rem;color:var(--text2);line-height:1.6}
+
+/* Services */
+.srv-grid{display:flex;flex-direction:column;gap:12px}
+.srv-card{background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:16px;transition:all .3s}
+.srv-card:hover{transform:translateY(-2px);border-color:rgba(56,189,248,.2);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.srv-icon{width:40px;height:40px;border-radius:10px;background:rgba(56,189,248,.1);display:flex;align-items:center;justify-content:center;color:var(--cyan);font-size:1.1rem;margin-bottom:10px}
+.srv-title{font-size:.85rem;font-weight:700;color:#fff;margin-bottom:4px}
+.srv-desc{font-size:.72rem;color:var(--text2);line-height:1.5;margin-bottom:10px}
+.srv-btn{display:inline-block;padding:5px 12px;border-radius:5px;background:rgba(56,189,248,.1);color:var(--cyan);font-size:.65rem;font-weight:600;text-decoration:none;transition:all .3s}
+.srv-btn:hover{background:var(--cyan);color:#000}
+
+/* Skills */
+.sk-cat{margin-bottom:16px}
+.sk-cat-title{font-size:.72rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.sk-item{margin-bottom:8px}
+.sk-name{display:flex;justify-content:space-between;font-size:.72rem;color:var(--text2);margin-bottom:3px}
+.sk-bar{height:5px;background:rgba(148,163,184,.1);border-radius:3px;overflow:hidden}
+.sk-bar div{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--cyan),var(--gold));width:0%;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.sk-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.sk-tool{padding:5px 10px;border-radius:6px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.12);color:var(--cyan);font-size:.65rem;font-weight:500}
+
+/* Project featured */
+.proj-img{width:100%;height:140px;object-fit:cover;border-radius:10px;margin-bottom:12px;border:1px solid rgba(148,163,184,.1);cursor:pointer;transition:all .3s}
+.proj-img:hover{transform:scale(1.02);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.proj-link{font-size:.72rem;color:var(--cyan);text-decoration:none;display:flex;align-items:center;gap:4px;margin-bottom:6px}
+.proj-link:hover{text-decoration:underline}
+.proj-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.proj-tag{font-size:.6rem;padding:3px 8px;border-radius:4px;background:rgba(56,189,248,.08);color:var(--cyan);border:1px solid rgba(56,189,248,.1)}
+.proj-desc{font-size:.75rem;color:var(--text2);line-height:1.6;margin-bottom:10px}
+.proj-feats{list-style:none;margin-bottom:12px}
+.proj-feats li{font-size:.72rem;color:var(--text2);line-height:1.6;padding-left:14px;position:relative;margin-bottom:4px}
+.proj-feats li::before{content:'\2713';position:absolute;left:0;color:var(--gold);font-weight:700}
+.proj-btns{display:flex;gap:8px}
+.proj-btns a{padding:7px 14px;border-radius:6px;font-size:.68rem;font-weight:600;text-decoration:none;transition:all .3s;display:inline-flex;align-items:center;gap:5px}
+.proj-btns a.solid{background:linear-gradient(135deg,var(--cyan),#0ea5e9);color:#000}
+.proj-btns a.solid:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(56,189,248,.3)}
+.proj-btns a.ghost{border:1px solid rgba(148,163,184,.2);color:var(--text2)}
+.proj-btns a.ghost:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* Project list */
+.plist{display:flex;flex-direction:column;gap:10px}
+.pitem{background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center;transition:all .3s}
+.pitem:hover{border-color:rgba(56,189,248,.15);transform:translateX(3px)}
+.pitem-info h4{font-size:.82rem;color:#fff;margin-bottom:2px}
+.pitem-info p{font-size:.68rem;color:var(--text2);line-height:1.4}
+.pitem-tag{font-size:.6rem;padding:3px 10px;border-radius:20px;font-weight:600}
+.pitem-tag.view{background:rgba(56,189,248,.12);color:var(--cyan)}
+.pitem-tag.soon{background:rgba(148,163,184,.1);color:var(--muted)}
+.pitem-tag.personal{background:rgba(168,85,247,.12);color:#c084fc}
+
+/* Contact */
+.cform{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.cform input,.cform textarea{width:100%;padding:10px 12px;border-radius:8px;background:rgba(15,23,42,.6);border:1px solid rgba(148,163,184,.15);color:var(--text);font-family:'Inter',sans-serif;font-size:.75rem;outline:none;transition:all .3s}
+.cform input:focus,.cform textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(56,189,248,.1)}
+.cform textarea{resize:none;height:70px}
+.cform button{width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),#0ea5e9);color:#000;border:none;font-weight:700;font-size:.75rem;cursor:pointer;transition:all .3s}
+.cform button:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(56,189,248,.3)}
+.c-or{text-align:center;font-size:.65rem;color:var(--muted);margin:10px 0;position:relative}
+.c-or::before,.c-or::after{content:'';position:absolute;top:50%;width:30%;height:1px;background:rgba(148,163,184,.1)}
+.c-or::before{left:0}.c-or::after{right:0}
+.wa-opts{display:flex;gap:8px;margin-bottom:10px}
+.wa-opt{flex:1;padding:8px;border-radius:8px;background:rgba(15,23,42,.5);border:1px solid rgba(148,163,184,.1);color:var(--text2);font-size:.68rem;text-align:center;cursor:pointer;transition:all .3s}
+.wa-opt.active{background:rgba(56,189,248,.1);border-color:var(--cyan);color:var(--cyan)}
+.cinfo{display:flex;flex-direction:column;gap:10px}
+.cinfo-item{display:flex;align-items:flex-start;gap:10px}
+.cinfo-item i{color:var(--cyan);font-size:.8rem;margin-top:2px;width:16px;text-align:center}
+.cinfo-item div h5{font-size:.72rem;color:#fff;margin-bottom:1px}
+.cinfo-item div p{font-size:.68rem;color:var(--text2)}
+.cinfo .social-row{margin-top:4px;justify-content:flex-start}
+
+/* Open to Work */
+.otw{text-align:center;padding-top:10px}
+.otw h3{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gold);margin-bottom:10px}
+.otw p{font-size:.78rem;color:var(--text2);line-height:1.7;margin-bottom:16px}
+.otw-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-weight:700;font-size:.78rem;text-decoration:none;transition:all .3s;box-shadow:0 4px 20px rgba(34,197,94,.25)}
+.otw-btn:hover{transform:translateY(-2px);box-shadow:0 6px 25px rgba(34,197,94,.35)}
+.otw-email{margin-top:14px;font-size:.72rem;color:var(--muted)}
+.otw-email a{color:var(--cyan);text-decoration:none}
+.otw-email a:hover{text-decoration:underline}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:12px 8px;text-align:center;transition:all .3s}
+.stat:hover{border-color:rgba(212,175,55,.2)}
+.stat-num{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;color:var(--gold);line-height:1}
+.stat-label{font-size:.6rem;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+
+/* Competencies */
+.comp-cat{margin-bottom:12px}
+.comp-title{font-size:.72rem;font-weight:700;color:var(--gold);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.comp-tags{display:flex;flex-wrap:wrap;gap:5px}
+.comp-tag{padding:4px 10px;border-radius:5px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.12);color:var(--cyan);font-size:.65rem;font-weight:500}
+
+/* Achievements */
+.achieve{background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:14px;margin-bottom:12px;border-left:3px solid var(--gold)}
+.achieve h4{font-size:.82rem;color:#fff;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.achieve p{font-size:.74rem;color:var(--text2);line-height:1.6}
+.quote{font-style:italic;font-size:.78rem;color:var(--text2);line-height:1.7;padding:12px;border-left:3px solid var(--cyan);background:rgba(56,189,248,.05);border-radius:0 8px 8px 0}
+.quote::before{content:'"';color:var(--gold);font-size:1.2rem;font-family:'Playfair Display',serif}
+
+/* Thank you */
+.thanks{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;height:100%;padding:30px}
+.thanks img{width:80px;height:80px;object-fit:cover;border-radius:18px;margin-bottom:16px;box-shadow:0 0 40px rgba(56,189,248,.15)}
+.thanks h2{font-family:'Playfair Display',serif;font-size:1.6rem;color:#fff;margin-bottom:4px}
+.thanks .sub{color:var(--gold);font-size:.8rem;margin-bottom:8px}
+.thanks .tagline{font-size:.85rem;color:var(--text2);font-style:italic;margin-bottom:20px}
+.thanks .contact-line{font-size:.72rem;color:var(--muted)}
+.thanks .contact-line a{color:var(--cyan);text-decoration:none}
+
+/* Back cover */
+.back-cover{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;height:100%;background:linear-gradient(145deg,#0a0e27,#0f172a,#1a1540)}
+.back-cover img{width:70px;height:70px;object-fit:cover;border-radius:16px;margin-bottom:14px;opacity:.7}
+.back-cover h3{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--gold);margin-bottom:6px}
+.back-cover p{font-size:.7rem;color:var(--muted)}
+
+/* Controls */
+.controls{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:100;display:flex;align-items:center;gap:12px;background:rgba(15,23,42,.7);backdrop-filter:blur(10px);border:1px solid rgba(148,163,184,.1);border-radius:12px;padding:8px 16px}
+.ctrl-btn{padding:8px 16px;border-radius:8px;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.15);color:var(--cyan);font-size:.72rem;font-weight:600;cursor:pointer;transition:all .3s;display:flex;align-items:center;gap:6px}
+.ctrl-btn:hover:not(:disabled){background:var(--cyan);color:#000}
+.ctrl-btn:disabled{opacity:.3;cursor:not-allowed}
+.page-counter{font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums;min-width:40px;text-align:center}
+
+/* Responsive */
+@media(max-width:900px){
+  .book-stage{padding:60px 0 80px}
+  .book{transform:scale(calc((100vw - 24px) / 840))}
+  .book.closed{transform:scale(calc((100vw - 24px) / 840)) translateX(calc(var(--pw)/-2))}
+}
+@media(max-width:600px){
+  .book{transform:scale(calc((100vw - 16px) / 840))}
+  .book.closed{transform:scale(calc((100vw - 16px) / 840)) translateX(calc(var(--pw)/-2))}
+}
+
+/* Animations */
+.fade-in{animation:fi .6s ease forwards;opacity:0}
+@keyframes fi{to{opacity:1}}
+.slide-up{animation:su .5s ease forwards;opacity:0;transform:translateY(15px)}
+@keyframes su{to{opacity:1;transform:translateY(0)}}
+</style>
 </head>
 <body>
 
-<!-- ===== LOADING SCREEN ===== -->
-<div class="loading-screen" id="loadingScreen">
-  <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Aevibron-logo.jpg" 
-       alt="Aevibron" class="loading-logo" onerror="this.style.display='none'">
-  <div class="loading-shimmer">Infinite Vybeflix</div>
-  <div class="loading-sub">Loading Portfolio</div>
-  <div class="loading-bar">
-    <div class="loading-bar-fill"></div>
-  </div>
-  <div class="loading-percent" id="loadingPercent">0%</div>
+<!-- Loading -->
+<div class="loading" id="loading">
+  <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Aevibron-logo.jpg" alt="Aevibron" onerror="this.style.display='none'">
+  <h2>Infinite Vybeflix</h2>
+  <p>Loading Portfolio</p>
+  <div class="loadbar"><div></div></div>
+  <div class="loadpct" id="loadpct">0%</div>
 </div>
 
-<!-- ===== PARTICLE CANVAS ===== -->
-<canvas id="particleCanvas"></canvas>
+<!-- Particles -->
+<canvas id="pCanvas"></canvas>
 
-<!-- ===== CONFETTI CANVAS ===== -->
-<canvas id="confettiCanvas"></canvas>
+<!-- Grain -->
+<div class="grain"></div>
 
-<!-- ===== GRAIN OVERLAY ===== -->
-<div class="grain-overlay"></div>
+<!-- Cursor -->
+<div class="cursor" id="cursor"></div>
 
-<!-- ===== CUSTOM CURSOR ===== -->
-<div class="cursor-dot" id="cursorDot"></div>
-
-<!-- ===== WELCOME MODAL ===== -->
-<div class="modal-overlay" id="welcomeModal">
-  <div class="modal-box">
-    <div class="modal-icon"><i class="fas fa-book-open"></i></div>
-    <h2>Welcome to My Portfolio</h2>
-    <p>This is an interactive 3D book. Here's how to navigate:</p>
-    <div class="modal-nav-tips">
-      <div class="modal-tip"><i class="fas fa-hand-pointer"></i> <span>Click the <strong>bottom-right corner</strong> of any page to flip forward</span></div>
-      <div class="modal-tip"><i class="fas fa-arrow-left"></i> <span>Click <strong>Previous / Next</strong> buttons below the book</span></div>
-      <div class="modal-tip"><i class="fas fa-keyboard"></i> <span>Use <strong>Arrow Keys</strong> (← →) on your keyboard</span></div>
-      <div class="modal-tip"><i class="fas fa-mobile-alt"></i> <span><strong>Swipe</strong> left or right on mobile devices</span></div>
-    </div>
-    <button class="modal-btn" id="modalCloseBtn">Start Exploring</button>
-  </div>
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <div class="lb-back"></div>
+  <img id="lbimg" src="" alt="">
 </div>
 
-<!-- ===== SITE HEADER ===== -->
+<!-- Header -->
 <div class="site-header">
   <h1>Infinite Vybeflix</h1>
   <p>Portfolio Book — 2026</p>
 </div>
 
-<!-- ===== BOOK STAGE ===== -->
+<!-- Book -->
 <div class="book-stage">
-  <div class="book" id="book">
+  <div class="book closed" id="book">
 
-    <!-- ============================================ -->
-    <!-- SHEET 0: COVER (front) | PROFILE (back) -->
-    <!-- ============================================ -->
-    <div class="sheet" style="z-index: 8;" data-index="0">
+    <!-- ═══ SHEET 0: COVER | PROFILE ═══ -->
+    <div class="sheet" data-index="0">
       <div class="face front cover-face">
-        <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Aevibron-logo.jpg" 
-             alt="Aevibron" class="cover-logo" onerror="this.style.display='none'">
+        <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Aevibron-logo.jpg" alt="Aevibron" class="zoom-img">
         <div class="cover-label">Portfolio 2026</div>
         <div class="cover-name">Aevibron</div>
-        <div class="cover-title">Founder & Lead AI Architect</div>
-        <div class="cover-tagline" id="typingText">
-          <span id="typedContent"></span><span class="cursor">|</span>
-        </div>
+        <div class="cover-role">Founder & Lead AI Architect</div>
+        <div class="cover-tagline" id="typeLine"><span id="typeText"></span><span class="cblink"></span></div>
         <div>
-          <button class="cover-btn primary magnetic" onclick="goToPage(1)">View Projects</button>
-          <button class="cover-btn secondary magnetic" onclick="goToPage(5)">Contact Me</button>
+          <button class="cover-btn primary" onclick="goToPage(3)">View Projects</button>
+          <button class="cover-btn secondary" onclick="goToPage(6)">Contact Me</button>
         </div>
         <div class="corner" onclick="flipNext()"></div>
       </div>
-      <div class="face back page-left">
-        <div class="page-accent-bar"></div>
-        <div class="page-inner">
-          <div class="profile-section">
-            <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Aevibron-advert.png" 
-                 alt="Aevibron" class="profile-avatar" onerror="this.style.display='none'">
-            <div class="profile-name">Aevibron</div>
-            <div class="profile-role">Founder & Lead AI Architect</div>
-            <div class="social-row">
-              <a href="https://github.com" class="social-icon magnetic" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
-              <a href="https://linkedin.com" class="social-icon magnetic" target="_blank" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-              <a href="https://x.com" class="social-icon magnetic" target="_blank" title="X/Twitter"><i class="fab fa-x-twitter"></i></a>
-              <a href="mailto:aevibron@gmail.com" class="social-icon magnetic" title="Email"><i class="fas fa-envelope"></i></a>
-            </div>
-            <p class="profile-bio">
-              I architect AI-powered ecosystems — from <strong>Nuvuja</strong> (AI IDE) to <strong>Aevibron Gateway</strong> (1M req/min API infrastructure). 
-              Self-taught builder turning complex ideas into production-grade systems that scale.
-            </p>
-            <div class="btn-row">
-              <a href="#" class="btn btn-primary magnetic" onclick="goToPage(6); return false;"><i class="fas fa-file-alt"></i> View CV</a>
-              <a href="#" class="btn btn-outline magnetic" onclick="goToPage(5); return false;"><i class="fas fa-paper-plane"></i> Contact Me</a>
+      <div class="face back">
+        <div class="page-left">
+          <div class="page-inner">
+            <div class="profile-sec">
+              <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Aevibron-advert.png" alt="Aevibron" class="zoom-img">
+              <div class="p-name">Aevibron</div>
+              <div class="p-role">Founder & Lead AI Architect</div>
+              <div class="social-row">
+                <a href="https://github.com" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+                <a href="https://linkedin.com" target="_blank" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                <a href="https://x.com" target="_blank" title="X/Twitter"><i class="fab fa-x-twitter"></i></a>
+                <a href="mailto:aevibron@gmail.com" title="Email"><i class="fas fa-envelope"></i></a>
+              </div>
+              <p class="p-bio">I architect AI-powered ecosystems — from <strong style="color:var(--cyan)">Nuvuja</strong> (AI IDE) to <strong style="color:var(--cyan)">Aevibron Gateway</strong> (1M req/min API infrastructure). Self-taught builder turning complex ideas into production-grade systems that scale.</p>
+              <div class="btn-row">
+                <a href="#" class="primary" onclick="goToPage(5);return false;"><i class="fas fa-file-alt"></i> View CV</a>
+                <a href="#" class="outline" onclick="goToPage(6);return false;"><i class="fas fa-paper-plane"></i> Contact Me</a>
+              </div>
             </div>
           </div>
         </div>
-        <div class="page-number left">1</div>
         <div class="corner-back" onclick="flipPrev()"></div>
       </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- SHEET 1: WORK EXPERIENCE (front) | EDUCATION (back) -->
-    <!-- ============================================ -->
-    <div class="sheet" style="z-index: 7;" data-index="1">
-      <div class="bookmark-ribbon"></div>
-      <div class="face front page-right">
-        <div class="page-accent-bar"></div>
+    <!-- ═══ SHEET 1: WORK EXPERIENCE | EDUCATION ═══ -->
+    <div class="sheet" data-index="1">
+      <div class="face front">
         <div class="page-inner">
-          <div class="page-title">Work Experience</div>
+          <div class="p-title">Work Experience</div>
           <div class="timeline">
-            <div class="timeline-item observe">
-              <div class="timeline-date">2024 — Present</div>
-              <div class="timeline-title">Founder & Lead Developer</div>
-              <div class="timeline-company">Aevibron / Infinite Vybeflix</div>
-              <div class="timeline-desc">
-                Architecting AI-powered tools: Nuvuja (AI IDE with console-aware fixing), Aevibron Gateway 
-                (unlimited AI API, 1M+ req/min), IRIS (autonomous AI engineer), Kaelum (Termux-native AI), 
-                and Maureonix (700+ command WhatsApp bot).
-              </div>
+            <div class="t-item">
+              <div class="t-date">2024 — Present</div>
+              <div class="t-title">Founder & Lead Developer</div>
+              <div class="t-comp">Aevibron / Infinite Vybeflix</div>
+              <div class="t-desc">Architecting AI-powered tools: Nuvuja (AI IDE with console-aware fixing), Aevibron Gateway (unlimited AI API, 1M+ req/min), IRIS (autonomous AI engineer), Kaelum (Termux-native AI), and Maureonix (700+ command WhatsApp bot).</div>
             </div>
-            <div class="timeline-item observe">
-              <div class="timeline-date">2023 — 2024</div>
-              <div class="timeline-title">Independent Full-Stack Developer</div>
-              <div class="timeline-company">Freelance & Open Source</div>
-              <div class="timeline-desc">
-                Delivered full-stack applications, AI automations, and Firebase backends for global clients. 
-                Specialized in React, Node.js, LLM integrations, and real-time systems.
-              </div>
+            <div class="t-item">
+              <div class="t-date">2023 — 2024</div>
+              <div class="t-title">Independent Full-Stack Developer</div>
+              <div class="t-comp">Freelance & Open Source</div>
+              <div class="t-desc">Delivered full-stack applications, AI automations, and Firebase backends for global clients. Specialized in React, Node.js, LLM integrations, and real-time systems.</div>
             </div>
-            <div class="timeline-item observe">
-              <div class="timeline-date">2021 — 2023</div>
-              <div class="timeline-title">Self-Taught Developer</div>
-              <div class="timeline-company">Continuous Learning & Building</div>
-              <div class="timeline-desc">
-                Mastered JavaScript ecosystems, cloud architecture, and AI APIs through relentless building. 
-                Launched first production tools and established the Aevibron brand identity.
-              </div>
+            <div class="t-item">
+              <div class="t-date">2021 — 2023</div>
+              <div class="t-title">Self-Taught Developer</div>
+              <div class="t-comp">Continuous Learning & Building</div>
+              <div class="t-desc">Mastered JavaScript ecosystems, cloud architecture, and AI APIs through relentless building. Launched first production tools and established the Aevibron brand identity.</div>
             </div>
           </div>
         </div>
-        <div class="page-number right">2</div>
         <div class="corner" onclick="flipNext()"></div>
       </div>
-      <div class="face back page-left">
-        <div class="page-accent-bar"></div>
-        <div class="page-inner">
-          <div class="page-title">Education</div>
-          <div class="timeline">
-            <div class="timeline-item observe">
-              <div class="timeline-date">2021 — Present</div>
-              <div class="timeline-title">Mastery in AI Systems & Architecture</div>
-              <div class="timeline-company">Self-Directed / Production-Grade Learning</div>
-              <div class="timeline-desc">
-                Deep-dive into LLM orchestration, API gateway design, autonomous agent frameworks, 
-                and full-stack deployment at scale. Learned by shipping production systems.
+      <div class="face back">
+        <div class="page-left">
+          <div class="page-inner">
+            <div class="p-title">Education</div>
+            <div class="timeline">
+              <div class="t-item">
+                <div class="t-date">2021 — Present</div>
+                <div class="t-title">Mastery in AI Systems & Architecture</div>
+                <div class="t-comp">Self-Directed / Production-Grade Learning</div>
+                <div class="t-desc">Deep-dive into LLM orchestration, API gateway design, autonomous agent frameworks, and full-stack deployment at scale. Learned by shipping production systems.</div>
               </div>
-            </div>
-            <div class="timeline-item observe">
-              <div class="timeline-date">2020 — 2021</div>
-              <div class="timeline-title">Advanced Software Engineering Track</div>
-              <div class="timeline-company">Intensive Bootcamp & Real-World Practice</div>
-              <div class="timeline-desc">
-                Intensive focus on React, Node.js, Firebase, REST API design, and cloud functions. 
-                Built 10+ projects from scratch.
+              <div class="t-item">
+                <div class="t-date">2020 — 2021</div>
+                <div class="t-title">Advanced Software Engineering Track</div>
+                <div class="t-comp">Intensive Bootcamp & Real-World Practice</div>
+                <div class="t-desc">Intensive focus on React, Node.js, Firebase, REST API design, and cloud functions. Built 10+ projects from scratch.</div>
               </div>
-            </div>
-            <div class="timeline-item observe">
-              <div class="timeline-date">2019 — 2020</div>
-              <div class="timeline-title">Foundation in Computer Science</div>
-              <div class="timeline-company">Programming Logic & System Design</div>
-              <div class="timeline-desc">
-                Built strong fundamentals in algorithms, data structures, and software architecture 
-                through online coursework and competitive practice.
+              <div class="t-item">
+                <div class="t-date">2019 — 2020</div>
+                <div class="t-title">Foundation in Computer Science</div>
+                <div class="t-comp">Programming Logic & System Design</div>
+                <div class="t-desc">Built strong fundamentals in algorithms, data structures, and software architecture through online coursework and competitive practice.</div>
               </div>
             </div>
           </div>
         </div>
-        <div class="page-number left">3</div>
         <div class="corner-back" onclick="flipPrev()"></div>
       </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- SHEET 2: SERVICES (front) | SKILLS (back) -->
-    <!-- ============================================ -->
-    <div class="sheet" style="z-index: 6;" data-index="2">
-      <div class="bookmark-ribbon"></div>
-      <div class="face front page-right">
-        <div class="page-accent-bar"></div>
+    <!-- ═══ SHEET 2: SERVICES | SKILLS ═══ -->
+    <div class="sheet" data-index="2">
+      <div class="face front">
         <div class="page-inner">
-          <div class="page-title">My Services</div>
-          <div class="services-grid">
-            <div class="service-card magnetic">
-              <div class="service-icon"><i class="fas fa-code"></i></div>
-              <div class="service-title">Web Development</div>
-              <div class="service-desc">Full-stack apps with React, Node.js, and clean scalable architecture.</div>
-              <button class="service-btn">Learn More</button>
+          <div class="p-title">My Services</div>
+          <div class="srv-grid">
+            <div class="srv-card">
+              <div class="srv-icon"><i class="fas fa-code"></i></div>
+              <div class="srv-title">Web Development</div>
+              <div class="srv-desc">Full-stack apps with React, Node.js, and clean scalable architecture.</div>
+              <a href="#" class="srv-btn" onclick="goToPage(6);return false;">Learn More</a>
             </div>
-            <div class="service-card magnetic">
-              <div class="service-icon"><i class="fas fa-robot"></i></div>
-              <div class="service-title">AI Automation</div>
-              <div class="service-desc">LLM workflows, smart routing, and autonomous agent systems.</div>
-              <button class="service-btn">Learn More</button>
+            <div class="srv-card">
+              <div class="srv-icon"><i class="fas fa-robot"></i></div>
+              <div class="srv-title">AI Automation</div>
+              <div class="srv-desc">LLM workflows, smart routing, and autonomous agent systems.</div>
+              <a href="#" class="srv-btn" onclick="goToPage(6);return false;">Learn More</a>
             </div>
-            <div class="service-card magnetic">
-              <div class="service-icon"><i class="fas fa-server"></i></div>
-              <div class="service-title">API Infrastructure</div>
-              <div class="service-desc">High-performance gateways handling millions of requests per minute.</div>
-              <button class="service-btn">Learn More</button>
+            <div class="srv-card">
+              <div class="srv-icon"><i class="fas fa-server"></i></div>
+              <div class="srv-title">API Infrastructure</div>
+              <div class="srv-desc">High-performance gateways handling millions of requests per minute.</div>
+              <a href="#" class="srv-btn" onclick="goToPage(6);return false;">Learn More</a>
             </div>
-            <div class="service-card magnetic">
-              <div class="service-icon"><i class="fas fa-mobile-alt"></i></div>
-              <div class="service-title">Bot Development</div>
-              <div class="service-desc">WhatsApp & Telegram bots with 700+ commands and AI conversations.</div>
-              <button class="service-btn">Learn More</button>
+            <div class="srv-card">
+              <div class="srv-icon"><i class="fab fa-whatsapp"></i></div>
+              <div class="srv-title">Bot Development</div>
+              <div class="srv-desc">WhatsApp & Telegram bots with 700+ commands and AI conversations.</div>
+              <a href="#" class="srv-btn" onclick="goToPage(6);return false;">Learn More</a>
             </div>
           </div>
         </div>
-        <div class="page-number right">4</div>
         <div class="corner" onclick="flipNext()"></div>
       </div>
-      <div class="face back page-left">
-        <div class="page-accent-bar"></div>
-        <div class="page-inner">
-          <div class="page-title">My Skills</div>
-          <div class="skills-section">
-            <div class="skills-label"><i class="fas fa-laptop-code"></i> Front-End</div>
-            <div class="skill-bar-item">
-              <div class="skill-bar-header"><span class="skill-bar-name">React / Next.js</span><span class="skill-bar-percent">95%</span></div>
-              <div class="skill-bar-track"><div class="skill-bar-fill" data-width="95"></div></div>
+      <div class="face back">
+        <div class="page-left">
+          <div class="page-inner">
+            <div class="p-title">My Skills</div>
+            <div class="sk-cat">
+              <div class="sk-cat-title"><i class="fas fa-laptop-code"></i> Front-End</div>
+              <div class="sk-item"><div class="sk-name"><span>React / Next.js</span><span>95%</span></div><div class="sk-bar"><div data-w="95"></div></div></div>
+              <div class="sk-item"><div class="sk-name"><span>JavaScript / TypeScript</span><span>92%</span></div><div class="sk-bar"><div data-w="92"></div></div></div>
+              <div class="sk-item"><div class="sk-name"><span>HTML5 / CSS3</span><span>90%</span></div><div class="sk-bar"><div data-w="90"></div></div></div>
             </div>
-            <div class="skill-bar-item">
-              <div class="skill-bar-header"><span class="skill-bar-name">JavaScript / TypeScript</span><span class="skill-bar-percent">92%</span></div>
-              <div class="skill-bar-track"><div class="skill-bar-fill" data-width="92"></div></div>
+            <div class="sk-cat">
+              <div class="sk-cat-title"><i class="fas fa-database"></i> Back-End & Cloud</div>
+              <div class="sk-item"><div class="sk-name"><span>Node.js</span><span>88%</span></div><div class="sk-bar"><div data-w="88"></div></div></div>
+              <div class="sk-item"><div class="sk-name"><span>Firebase</span><span>85%</span></div><div class="sk-bar"><div data-w="85"></div></div></div>
+              <div class="sk-item"><div class="sk-name"><span>Python</span><span>78%</span></div><div class="sk-bar"><div data-w="78"></div></div></div>
             </div>
-            <div class="skill-bar-item">
-              <div class="skill-bar-header"><span class="skill-bar-name">HTML5 / CSS3</span><span class="skill-bar-percent">90%</span></div>
-              <div class="skill-bar-track"><div class="skill-bar-fill" data-width="90"></div></div>
-            </div>
-          </div>
-          <div class="skills-section">
-            <div class="skills-label"><i class="fas fa-database"></i> Back-End & Cloud</div>
-            <div class="skill-bar-item">
-              <div class="skill-bar-header"><span class="skill-bar-name">Node.js</span><span class="skill-bar-percent">88%</span></div>
-              <div class="skill-bar-track"><div class="skill-bar-fill" data-width="88"></div></div>
-            </div>
-            <div class="skill-bar-item">
-              <div class="skill-bar-header"><span class="skill-bar-name">Firebase</span><span class="skill-bar-percent">85%</span></div>
-              <div class="skill-bar-track"><div class="skill-bar-fill" data-width="85"></div></div>
-            </div>
-            <div class="skill-bar-item">
-              <div class="skill-bar-header"><span class="skill-bar-name">Python</span><span class="skill-bar-percent">78%</span></div>
-              <div class="skill-bar-track"><div class="skill-bar-fill" data-width="78"></div></div>
-            </div>
-          </div>
-          <div class="skills-section">
-            <div class="skills-label"><i class="fas fa-brain"></i> AI & Tools</div>
-            <div class="skills-row">
-              <div class="skill-item magnetic"><i class="fas fa-brain" style="color:#10a37f"></i><span>OpenAI</span></div>
-              <div class="skill-item magnetic"><i class="fas fa-microchip" style="color:#f55"></i><span>Groq</span></div>
-              <div class="skill-item magnetic"><i class="fab fa-github" style="color:#333"></i><span>GitHub</span></div>
-              <div class="skill-item magnetic"><i class="fab fa-figma" style="color:#f24e1e"></i><span>Figma</span></div>
-              <div class="skill-item magnetic"><i class="fas fa-terminal" style="color:#000"></i><span>Termux</span></div>
-              <div class="skill-item magnetic"><i class="fas fa-cloud" style="color:#0ea5e9"></i><span>Vercel</span></div>
+            <div class="sk-cat">
+              <div class="sk-cat-title"><i class="fas fa-brain"></i> AI & Tools</div>
+              <div class="sk-tools">
+                <span class="sk-tool">OpenAI</span><span class="sk-tool">Groq</span><span class="sk-tool">GitHub</span>
+                <span class="sk-tool">Figma</span><span class="sk-tool">Termux</span><span class="sk-tool">Vercel</span>
+              </div>
             </div>
           </div>
         </div>
-        <div class="page-number left">5</div>
         <div class="corner-back" onclick="flipPrev()"></div>
       </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- SHEET 3: NUVUJA FEATURED (front) | PROJECTS LIST (back) -->
-    <!-- ============================================ -->
-    <div class="sheet" style="z-index: 5;" data-index="3">
-      <div class="bookmark-ribbon"></div>
-      <div class="face front page-right">
-        <div class="page-accent-bar"></div>
+    <!-- ═══ SHEET 3: LATEST PROJECT | PROJECTS LIST ═══ -->
+    <div class="sheet" data-index="3">
+      <div class="face front">
         <div class="page-inner">
-          <div class="page-title">Latest Project</div>
-          <div class="project-featured">
-            <div class="project-img-wrap">
-              <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Nuvuja-advert.png" 
-                   alt="Nuvuja" class="project-img" onerror="this.style.display='none'">
-              <div class="project-img-overlay"></div>
-            </div>
-            <div class="project-name">Nuvuja</div>
-            <a href="https://nuvuja.vercel.app" class="project-link" target="_blank">
-              <i class="fas fa-external-link-alt"></i> nuvuja.vercel.app
-            </a>
-            <div class="project-tech">React · Monaco Editor · AI APIs · WebSockets · Firebase</div>
-            <div class="project-desc">
-              An intelligent IDE where AI codes directly in the editor, reads console output, applies automatic fixes, 
-              and understands your codebase in real-time. Built for developers who want to ship faster.
-            </div>
-            <ul class="project-bullets">
-              <li>Live preview with instant rendering and hot reload</li>
-              <li>Console integration — AI reads errors & auto-fixes them</li>
-              <li>Multi-file support with intelligent context awareness</li>
-              <li>Real-time collaboration via WebSockets</li>
-            </ul>
-            <div class="btn-row">
-              <a href="https://nuvuja.vercel.app" class="btn btn-primary magnetic" target="_blank"><i class="fas fa-code"></i> Live Demo</a>
-              <a href="https://nuvuja.vercel.app" class="btn btn-outline magnetic" target="_blank"><i class="fas fa-rocket"></i> Try It</a>
-            </div>
+          <div class="p-title">Latest Project</div>
+          <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Nuvuja-advert.png" alt="Nuvuja" class="proj-img zoom-img">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <h3 style="font-family:'Playfair Display',serif;font-size:1.1rem;color:#fff">Nuvuja</h3>
+            <a href="https://nuvuja.vercel.app" target="_blank" class="proj-link"><i class="fas fa-external-link-alt"></i> nuvuja.vercel.app</a>
+          </div>
+          <div class="proj-tags">
+            <span class="proj-tag">React</span><span class="proj-tag">Monaco Editor</span><span class="proj-tag">AI APIs</span><span class="proj-tag">WebSockets</span><span class="proj-tag">Firebase</span>
+          </div>
+          <p class="proj-desc">An intelligent IDE where AI codes directly in the editor, reads console output, applies automatic fixes, and understands your codebase in real-time. Built for developers who want to ship faster.</p>
+          <ul class="proj-feats">
+            <li>Live preview with instant rendering and hot reload</li>
+            <li>Console integration — AI reads errors & auto-fixes them</li>
+            <li>Multi-file support with intelligent context awareness</li>
+            <li>Real-time collaboration via WebSockets</li>
+          </ul>
+          <div class="proj-btns">
+            <a href="https://nuvuja.vercel.app" target="_blank" class="solid"><i class="fas fa-code"></i> Live Demo</a>
+            <a href="https://nuvuja.vercel.app" target="_blank" class="ghost"><i class="fas fa-rocket"></i> Try It</a>
           </div>
         </div>
-        <div class="page-number right">6</div>
         <div class="corner" onclick="flipNext()"></div>
       </div>
-      <div class="face back page-left">
-        <div class="page-accent-bar"></div>
-        <div class="page-inner">
-          <div class="page-title">My Projects</div>
-          <div class="project-list">
-            <div class="project-row magnetic">
-              <div class="project-row-info">
-                <div class="project-row-name">Aevibron Gateway</div>
-                <div class="project-row-desc">Unlimited AI API with up to 1M requests/min. Image & text generation infrastructure.</div>
+      <div class="face back">
+        <div class="page-left">
+          <div class="page-inner">
+            <div class="p-title">My Projects</div>
+            <div class="plist">
+              <div class="pitem">
+                <div class="pitem-info">
+                  <h4>Aevibron Gateway</h4>
+                  <p>Unlimited AI API with up to 1M requests/min. Image & text generation infrastructure.</p>
+                </div>
+                <span class="pitem-tag view">View</span>
               </div>
-              <a href="https://aevibron-gateway.vercel.app" target="_blank"><button class="project-row-btn">View</button></a>
-            </div>
-            <div class="project-row magnetic">
-              <div class="project-row-info">
-                <div class="project-row-name">IRIS</div>
-                <div class="project-row-desc">Autonomous AI software engineer. Manages deployments, API keys, and the entire ecosystem.</div>
+              <div class="pitem">
+                <div class="pitem-info">
+                  <h4>IRIS</h4>
+                  <p>Autonomous AI software engineer. Manages deployments, API keys, and the entire ecosystem.</p>
+                </div>
+                <span class="pitem-tag soon">Soon</span>
               </div>
-              <button class="project-row-btn soon">Soon</button>
-            </div>
-            <div class="project-row magnetic">
-              <div class="project-row-info">
-                <div class="project-row-name">Kaelum</div>
-                <div class="project-row-desc">Terminal-native AI running on Termux. Full system control through natural language.</div>
+              <div class="pitem">
+                <div class="pitem-info">
+                  <h4>Kaelum</h4>
+                  <p>Terminal-native AI running on Termux. Full system control through natural language.</p>
+                </div>
+                <span class="pitem-tag personal">Personal</span>
               </div>
-              <button class="project-row-btn personal">Personal</button>
-            </div>
-            <div class="project-row magnetic">
-              <div class="project-row-info">
-                <div class="project-row-name">Maureonix</div>
-                <div class="project-row-desc">WhatsApp bot with 700+ working commands. From utilities to AI conversations.</div>
+              <div class="pitem">
+                <div class="pitem-info">
+                  <h4>Maureonix</h4>
+                  <p>WhatsApp bot with 700+ working commands. From utilities to AI conversations.</p>
+                </div>
+                <span class="pitem-tag personal">Personal</span>
               </div>
-              <button class="project-row-btn personal">Personal</button>
             </div>
           </div>
         </div>
-        <div class="page-number left">7</div>
         <div class="corner-back" onclick="flipPrev()"></div>
       </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- SHEET 4: GATEWAY FEATURED (front) | CONTACT FORM (back) -->
-    <!-- ============================================ -->
-    <div class="sheet" style="z-index: 4;" data-index="4">
-      <div class="bookmark-ribbon"></div>
-      <div class="face front page-right">
-        <div class="page-accent-bar"></div>
+    <!-- ═══ SHEET 4: FEATURED WORK | OPEN TO WORK ═══ -->
+    <div class="sheet" data-index="4">
+      <div class="face front">
         <div class="page-inner">
-          <div class="page-title">Featured Work</div>
-          <div class="project-featured">
-            <div class="project-img-wrap">
-              <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Aevibron-gateway.png" 
-                   alt="Aevibron Gateway" class="project-img" onerror="this.style.display='none'">
-              <div class="project-img-overlay"></div>
-            </div>
-            <div class="project-name">Aevibron Gateway</div>
-            <a href="https://aevibron-gateway.vercel.app" class="project-link" target="_blank">
-              <i class="fas fa-external-link-alt"></i> aevibron-gateway.vercel.app
-            </a>
-            <div class="project-tech">Node.js · Vercel · AI APIs · Rate Limiting · Auth · Analytics</div>
-            <div class="project-desc">
-              The infrastructure powering unlimited AI access. Generate images and text at scale 
-              with up to 1 million requests per minute. Built for developers who refuse limits.
-            </div>
-            <ul class="project-bullets">
-              <li>Unlimited API keys with granular access control</li>
-              <li>1M+ requests/minute throughput on free tier</li>
-              <li>Image & text generation endpoints (OpenAI, Groq, etc.)</li>
-              <li>Real-time usage analytics and health monitoring</li>
-            </ul>
-            <div class="btn-row">
-              <a href="https://aevibron-gateway.vercel.app" class="btn btn-primary magnetic" target="_blank"><i class="fas fa-key"></i> Get API Key</a>
-              <a href="https://aevibron-gateway.vercel.app" class="btn btn-outline magnetic" target="_blank"><i class="fas fa-book"></i> Docs</a>
-            </div>
+          <div class="p-title">Featured Work</div>
+          <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Aevibron-gateway.png" alt="Aevibron Gateway" class="proj-img zoom-img">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <h3 style="font-family:'Playfair Display',serif;font-size:1.1rem;color:#fff">Aevibron Gateway</h3>
+            <a href="https://aevibron-gateway.vercel.app" target="_blank" class="proj-link"><i class="fas fa-external-link-alt"></i> aevibron-gateway.vercel.app</a>
+          </div>
+          <div class="proj-tags">
+            <span class="proj-tag">Node.js</span><span class="proj-tag">Vercel</span><span class="proj-tag">AI APIs</span><span class="proj-tag">Rate Limiting</span><span class="proj-tag">Auth</span><span class="proj-tag">Analytics</span>
+          </div>
+          <p class="proj-desc">The infrastructure powering unlimited AI access. Generate images and text at scale with up to 1 million requests per minute. Built for developers who refuse limits.</p>
+          <ul class="proj-feats">
+            <li>Unlimited API keys with granular access control</li>
+            <li>1M+ requests/minute throughput on free tier</li>
+            <li>Image & text generation endpoints (OpenAI, Groq, etc.)</li>
+            <li>Real-time usage analytics and health monitoring</li>
+          </ul>
+          <div class="proj-btns">
+            <a href="https://aevibron-gateway.vercel.app" target="_blank" class="solid"><i class="fas fa-key"></i> Get API Key</a>
+            <a href="https://aevibron-gateway.vercel.app" target="_blank" class="ghost"><i class="fas fa-book"></i> Docs</a>
           </div>
         </div>
-        <div class="page-number right">8</div>
         <div class="corner" onclick="flipNext()"></div>
       </div>
-      <div class="face back page-left">
-        <div class="page-accent-bar"></div>
-        <div class="page-inner">
-          <div class="page-title">Contact Me!</div>
-
-          <form id="emailForm" style="margin-bottom:16px;">
-            <div class="form-group">
-              <label>Full Name</label>
-              <input type="text" id="emailName" placeholder="Your name" required>
-            </div>
-            <div class="form-group">
-              <label>Email Address</label>
-              <input type="email" id="emailEmail" placeholder="you@email.com" required>
-            </div>
-            <div class="form-group">
-              <label>Your Message</label>
-              <textarea id="emailMessage" placeholder="Tell me about your project..." required></textarea>
-            </div>
-            <button type="submit" class="form-submit magnetic"><i class="fas fa-envelope"></i> Send via Email</button>
-          </form>
-
-          <div style="text-align:center;margin:10px 0;font-size:0.68rem;color:var(--text-muted);font-weight:600;">— OR —</div>
-
-          <div class="form-group">
-            <label style="margin-bottom:8px;">Message via WhatsApp</label>
-            <div class="whatsapp-options">
-              <div class="whatsapp-opt active magnetic" data-mode="prefill">
-                <i class="fab fa-whatsapp" style="color:#25d366"></i>
-                Pre-fill Message
-              </div>
-              <div class="whatsapp-opt magnetic" data-mode="chat">
-                <i class="fab fa-whatsapp" style="color:#25d366"></i>
-                Open Chat
+      <div class="face back">
+        <div class="page-left">
+          <div class="page-inner">
+            <div class="p-title">Open to Work</div>
+            <div class="otw">
+              <h3>Let's Build Something Extraordinary</h3>
+              <p>Looking for your next AI integration, full-stack build, or automation project? I turn complex ideas into production reality. With 5+ years of relentless building and systems handling millions of requests, I'm ready to architect your vision.</p>
+              <a href="https://wa.me/254116903500" target="_blank" class="otw-btn"><i class="fab fa-whatsapp"></i> Let's Talk on WhatsApp</a>
+              <div class="otw-email">Or email: <a href="mailto:aevibron@gmail.com">aevibron@gmail.com</a></div>
+              <div class="stats" style="margin-top:20px">
+                <div class="stat"><div class="stat-num">5+</div><div class="stat-label">Years Building</div></div>
+                <div class="stat"><div class="stat-num">10+</div><div class="stat-label">Production Projects</div></div>
+                <div class="stat"><div class="stat-num">1M+</div><div class="stat-label">Million Req/Min</div></div>
               </div>
             </div>
-            <input type="text" id="waName" placeholder="Your name (optional)" style="margin-bottom:8px;">
-            <textarea id="waMessage" placeholder="Type your message here..."></textarea>
           </div>
-          <div class="whatsapp-preview" id="waPreview">
-            <strong>Preview:</strong> <span id="waPreviewText"></span>
-          </div>
-          <button class="form-submit magnetic" id="waSubmit" style="background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);">
-            <i class="fab fa-whatsapp"></i> Open WhatsApp with Message
-          </button>
         </div>
-        <div class="page-number left">9</div>
         <div class="corner-back" onclick="flipPrev()"></div>
       </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- SHEET 5: GET IN TOUCH (front) | OPEN TO WORK (back) -->
-    <!-- ============================================ -->
-    <div class="sheet" style="z-index: 3;" data-index="5">
-      <div class="bookmark-ribbon"></div>
-      <div class="face front page-right">
-        <div class="page-accent-bar"></div>
+    <!-- ═══ SHEET 5: CV SUMMARY | PROFESSIONAL EXPERIENCE ═══ -->
+    <div class="sheet" data-index="5">
+      <div class="face front">
         <div class="page-inner">
-          <div class="contact-block">
-            <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Aevibron-advert.png" 
-                 alt="Aevibron" class="profile-avatar" onerror="this.style.display='none'">
-            <a href="mailto:aevibron@gmail.com" class="contact-email">aevibron@gmail.com</a>
-            <div class="contact-status">Available for freelance & contract work</div>
-            <div class="social-row">
-              <a href="https://github.com" class="social-icon magnetic" target="_blank"><i class="fab fa-github"></i></a>
-              <a href="https://linkedin.com" class="social-icon magnetic" target="_blank"><i class="fab fa-linkedin-in"></i></a>
-              <a href="https://x.com" class="social-icon magnetic" target="_blank"><i class="fab fa-x-twitter"></i></a>
-              <a href="mailto:aevibron@gmail.com" class="social-icon magnetic"><i class="fas fa-envelope"></i></a>
+          <div style="text-align:center;margin-bottom:14px">
+            <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Aevibron-advert.png" alt="Aevibron" style="width:70px;height:70px;object-fit:cover;border-radius:50%;border:2px solid rgba(212,175,55,.2);margin-bottom:8px">
+            <h3 style="font-family:'Playfair Display',serif;font-size:1.1rem;color:#fff">Aevibron</h3>
+            <p style="font-size:.72rem;color:var(--cyan)">Founder & Lead AI Architect · Full-Stack Developer</p>
+            <p style="font-size:.65rem;color:var(--muted);margin-top:4px"><i class="fas fa-envelope" style="margin-right:4px"></i>aevibron@gmail.com · <i class="fas fa-phone" style="margin-right:4px"></i>+254 116 903 500 · <i class="fas fa-map-marker-alt" style="margin-right:4px"></i>Nairobi, Kenya — Remote</p>
+          </div>
+          <div class="stats">
+            <div class="stat"><div class="stat-num">5+</div><div class="stat-label">Years Building</div></div>
+            <div class="stat"><div class="stat-num">10+</div><div class="stat-label">Production Projects</div></div>
+            <div class="stat"><div class="stat-num">1M+</div><div class="stat-label">Million Req/Min</div></div>
+          </div>
+          <div style="margin-bottom:14px">
+            <h4 style="font-size:.78rem;color:var(--gold);margin-bottom:6px;display:flex;align-items:center;gap:6px"><i class="fas fa-user-tie"></i> Professional Summary</h4>
+            <p style="font-size:.74rem;color:var(--text2);line-height:1.7">Visionary AI architect and full-stack developer with a proven track record of building production-grade systems from scratch. Founded Aevibron (Infinite Vybeflix) and shipped multiple AI-powered products including an intelligent IDE, unlimited API gateway, autonomous AI engineer, and a 700+ command WhatsApp bot. Self-taught, relentlessly iterative, and obsessed with turning complex ideas into scalable reality.</p>
+          </div>
+          <div>
+            <h4 style="font-size:.78rem;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:6px"><i class="fas fa-bullseye"></i> Core Competencies</h4>
+            <div class="comp-cat">
+              <div class="comp-title"><i class="fas fa-brain" style="font-size:.65rem"></i> AI & LLMs</div>
+              <div class="comp-tags"><span class="comp-tag">OpenAI API</span><span class="comp-tag">Groq</span><span class="comp-tag">LLM Orchestration</span><span class="comp-tag">Prompt Engineering</span><span class="comp-tag">Agent Frameworks</span></div>
             </div>
-            <div class="contact-meta">
-              <div class="contact-meta-item">
+            <div class="comp-cat">
+              <div class="comp-title"><i class="fas fa-layer-group" style="font-size:.65rem"></i> Full-Stack</div>
+              <div class="comp-tags"><span class="comp-tag">React / Next.js</span><span class="comp-tag">Node.js</span><span class="comp-tag">Firebase</span><span class="comp-tag">REST / GraphQL</span><span class="comp-tag">WebSockets</span></div>
+            </div>
+            <div class="comp-cat">
+              <div class="comp-title"><i class="fas fa-server" style="font-size:.65rem"></i> Infrastructure</div>
+              <div class="comp-tags"><span class="comp-tag">Vercel</span><span class="comp-tag">API Gateway Design</span><span class="comp-tag">Rate Limiting</span><span class="comp-tag">Auth Systems</span><span class="comp-tag">Cloud Functions</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="corner" onclick="flipNext()"></div>
+      </div>
+      <div class="face back">
+        <div class="page-left">
+          <div class="page-inner">
+            <div class="p-title">Professional Experience</div>
+            <div class="timeline">
+              <div class="t-item">
+                <div class="t-date">2024 — Present</div>
+                <div class="t-title">Founder & Lead AI Architect</div>
+                <div class="t-comp">Aevibron / Infinite Vybeflix · Nairobi, Kenya (Remote)</div>
+                <div class="t-desc">Architected and shipped 5+ production AI products from zero. Built Nuvuja (AI IDE with console-aware debugging), Aevibron Gateway (handling 1M+ req/min), IRIS (autonomous AI engineer), Kaelum (Termux-native AI), and Maureonix (700+ command WhatsApp bot).</div>
+              </div>
+              <div class="t-item">
+                <div class="t-date">2023 — 2024</div>
+                <div class="t-title">Independent Full-Stack Developer</div>
+                <div class="t-comp">Freelance & Open Source · Global Clients</div>
+                <div class="t-desc">Delivered custom full-stack applications, AI automations, and Firebase backends for international clients. Specialized in React dashboards, Node.js APIs, LLM integrations, and real-time systems. Maintained 100% client satisfaction across 15+ projects.</div>
+              </div>
+              <div class="t-item">
+                <div class="t-date">2021 — 2023</div>
+                <div class="t-title">Self-Directed Software Engineer</div>
+                <div class="t-comp">Continuous Learning & Building</div>
+                <div class="t-desc">Mastered modern JavaScript ecosystems, cloud architecture, and AI APIs through intensive self-study and hands-on building. Launched first production tools, contributed to open source, and established the technical foundation for the Aevibron ecosystem.</div>
+              </div>
+            </div>
+            <div class="p-title" style="margin-top:18px;font-size:1.1rem">Education & Certifications</div>
+            <div class="timeline">
+              <div class="t-item">
+                <div class="t-date">2021 — Present</div>
+                <div class="t-title">Mastery in AI Systems & Architecture</div>
+                <div class="t-comp">Self-Directed · Production-Grade Learning</div>
+                <div class="t-desc">Deep expertise in LLM orchestration, API gateway design, autonomous agent frameworks, and scalable full-stack deployment. Learned exclusively by building and shipping real products.</div>
+              </div>
+              <div class="t-item">
+                <div class="t-date">2020 — 2021</div>
+                <div class="t-title">Advanced Software Engineering</div>
+                <div class="t-comp">Intensive Bootcamp & Real-World Practice</div>
+                <div class="t-desc">Intensive training in React, Node.js, Firebase, REST API design, and cloud functions. Built 10+ portfolio projects from scratch including real-time chat apps, AI integrations, and automated workflows.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="corner-back" onclick="flipPrev()"></div>
+      </div>
+    </div>
+
+    <!-- ═══ SHEET 6: ACHIEVEMENTS | CONTACT ME ═══ -->
+    <div class="sheet" data-index="6">
+      <div class="face front">
+        <div class="page-inner">
+          <div class="p-title">Key Projects</div>
+          <div class="srv-grid" style="gap:10px">
+            <div class="srv-card" style="padding:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <div class="srv-title" style="font-size:.8rem">Nuvuja — AI-Powered IDE</div>
+                <span style="font-size:.6rem;padding:2px 8px;border-radius:4px;background:rgba(34,197,94,.12);color:#4ade80">Live</span>
+              </div>
+              <div class="proj-tags" style="margin-bottom:6px"><span class="proj-tag">React</span><span class="proj-tag">Monaco Editor</span><span class="proj-tag">AI APIs</span></div>
+              <p style="font-size:.7rem;color:var(--text2);line-height:1.5">Intelligent code editor where AI writes, debugs, and fixes code in real-time. Features console integration, multi-file context, and live preview.</p>
+            </div>
+            <div class="srv-card" style="padding:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <div class="srv-title" style="font-size:.8rem">Aevibron Gateway</div>
+                <span style="font-size:.6rem;padding:2px 8px;border-radius:4px;background:rgba(34,197,94,.12);color:#4ade80">Live</span>
+              </div>
+              <div class="proj-tags" style="margin-bottom:6px"><span class="proj-tag">Node.js</span><span class="proj-tag">Vercel</span><span class="proj-tag">Auth</span></div>
+              <p style="font-size:.7rem;color:var(--text2);line-height:1.5">Unlimited AI API gateway supporting 1M+ requests/minute. Provides image & text generation endpoints with granular key management.</p>
+            </div>
+            <div class="srv-card" style="padding:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <div class="srv-title" style="font-size:.8rem">IRIS — Autonomous AI Engineer</div>
+                <span style="font-size:.6rem;padding:2px 8px;border-radius:4px;background:rgba(245,158,11,.12);color:#fbbf24">In Development</span>
+              </div>
+              <div class="proj-tags" style="margin-bottom:6px"><span class="proj-tag">AI Agents</span><span class="proj-tag">Automation</span><span class="proj-tag">DevOps</span></div>
+              <p style="font-size:.7rem;color:var(--text2);line-height:1.5">Fully autonomous AI that manages deployments, generates and rotates API keys, monitors system health, and handles infrastructure autonomously.</p>
+            </div>
+            <div class="srv-card" style="padding:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <div class="srv-title" style="font-size:.8rem">Maureonix — WhatsApp AI Bot</div>
+                <span style="font-size:.6rem;padding:2px 8px;border-radius:4px;background:rgba(34,197,94,.12);color:#4ade80">Live</span>
+              </div>
+              <div class="proj-tags" style="margin-bottom:6px"><span class="proj-tag">Node.js</span><span class="proj-tag">WhatsApp API</span><span class="proj-tag">AI Integration</span></div>
+              <p style="font-size:.7rem;color:var(--text2);line-height:1.5">Feature-rich WhatsApp bot with 700+ working commands spanning utilities, entertainment, AI conversations, and system automation.</p>
+            </div>
+          </div>
+          <div class="p-title" style="margin-top:16px;font-size:1.1rem">Achievements & Recognition</div>
+          <div class="achieve">
+            <h4><i class="fas fa-trophy" style="color:var(--gold)"></i> Built from zero to production</h4>
+            <p>No formal CS degree. Every skill was forged through shipping real products used by real people. Architected systems handling millions of requests. Created a brand (Aevibron) that stands for "Nothing is Impossible."</p>
+          </div>
+          <div class="quote">I don't just write code — I architect ecosystems. Every line is a decision, every product is a statement. The future belongs to those who build it.</div>
+        </div>
+        <div class="corner" onclick="flipNext()"></div>
+      </div>
+      <div class="face back">
+        <div class="page-left">
+          <div class="page-inner">
+            <div class="p-title">Contact Me!</div>
+            <form class="cform" id="eForm" onsubmit="sendEmail(event)">
+              <input type="text" id="eName" placeholder="Your Name" required>
+              <input type="email" id="eEmail" placeholder="your@email.com" required>
+              <textarea id="eMsg" placeholder="Tell me about your project..." required></textarea>
+              <button type="submit"><i class="fas fa-envelope"></i> Send via Email</button>
+            </form>
+            <div class="c-or">— OR —</div>
+            <div style="font-size:.72rem;color:var(--text2);margin-bottom:8px"><i class="fab fa-whatsapp" style="color:#22c55e;margin-right:6px"></i>Message via WhatsApp</div>
+            <div class="wa-opts">
+              <div class="wa-opt active" data-mode="prefill" onclick="setWaMode(this)">Pre-fill Message</div>
+              <div class="wa-opt" data-mode="chat" onclick="setWaMode(this)">Open Chat</div>
+            </div>
+            <div id="waPrefill" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+              <input type="text" id="waName" placeholder="Your name (optional)" style="width:100%;padding:8px 12px;border-radius:6px;background:rgba(15,23,42,.6);border:1px solid rgba(148,163,184,.15);color:var(--text);font-size:.72rem;outline:none">
+              <textarea id="waMsg" placeholder="Type your message here..." style="width:100%;padding:8px 12px;border-radius:6px;background:rgba(15,23,42,.6);border:1px solid rgba(148,163,184,.15);color:var(--text);font-size:.72rem;outline:none;resize:none;height:50px"></textarea>
+            </div>
+            <button onclick="openWhatsApp()" style="width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;font-weight:700;font-size:.75rem;cursor:pointer;margin-bottom:14px"><i class="fab fa-whatsapp"></i> <span id="waBtnText">Open WhatsApp with Message</span></button>
+            <div class="cinfo">
+              <div class="cinfo-item">
+                <i class="fas fa-envelope"></i>
+                <div><h5>Email</h5><p>aevibron@gmail.com</p></div>
+              </div>
+              <div class="cinfo-item">
                 <i class="fas fa-map-marker-alt"></i>
-                <div>
-                  <div class="contact-meta-label">Location</div>
-                  <div>Nairobi, Kenya — Remote OK Worldwide</div>
-                </div>
+                <div><h5>Location</h5><p>Nairobi, Kenya — Remote OK Worldwide</p></div>
               </div>
-              <div class="contact-meta-item">
+              <div class="cinfo-item">
                 <i class="fas fa-clock"></i>
-                <div>
-                  <div class="contact-meta-label">Response Time</div>
-                  <div>Within 24 hours</div>
-                </div>
+                <div><h5>Response Time</h5><p>Within 24 hours</p></div>
               </div>
-              <div class="contact-meta-item">
-                <i class="fas fa-crosshairs"></i>
-                <div>
-                  <div class="contact-meta-label">Focus Areas</div>
-                  <div>React · Firebase · AI Automation · API Design</div>
-                </div>
+              <div class="cinfo-item">
+                <i class="fas fa-bullseye"></i>
+                <div><h5>Focus Areas</h5><p>React · Firebase · AI Automation · API Design</p></div>
+              </div>
+              <div class="social-row" style="margin-top:6px">
+                <a href="https://github.com" target="_blank"><i class="fab fa-github"></i></a>
+                <a href="https://linkedin.com" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+                <a href="https://x.com" target="_blank"><i class="fab fa-x-twitter"></i></a>
+                <a href="mailto:aevibron@gmail.com"><i class="fas fa-envelope"></i></a>
               </div>
             </div>
           </div>
         </div>
-        <div class="page-number right">10</div>
-        <div class="corner" onclick="flipNext()"></div>
-      </div>
-      <div class="face back page-left">
-        <div class="page-accent-bar"></div>
-        <div class="page-inner" style="justify-content:center;">
-          <div class="open-work">
-            <div class="open-work-icon"><i class="fas fa-star"></i></div>
-            <h3>Open to Work</h3>
-            <p>
-              Looking for your next AI integration, full-stack build, or automation project? 
-              I turn complex ideas into production reality. Let's build something extraordinary.
-            </p>
-            <a href="https://wa.me/254116903500" class="btn btn-primary magnetic" target="_blank" style="padding:11px 28px;font-size:0.8rem;" id="hireBtn">
-              <i class="fab fa-whatsapp"></i> Let's Talk on WhatsApp
-            </a>
-            <div style="margin-top:14px;font-size:0.68rem;color:var(--text-muted);">
-              Or email: <a href="mailto:aevibron@gmail.com" style="color:var(--primary);">aevibron@gmail.com</a>
-            </div>
-          </div>
-        </div>
-        <div class="page-number left">11</div>
         <div class="corner-back" onclick="flipPrev()"></div>
       </div>
     </div>
 
-    <!-- ============================================ -->
-    <!-- SHEET 6: CV PAGE 1 (front) | CV PAGE 2 (back) -->
-    <!-- ============================================ -->
-    <div class="sheet" style="z-index: 2;" data-index="6">
-      <div class="bookmark-ribbon"></div>
-      <div class="face front page-right">
-        <div class="page-accent-bar"></div>
+    <!-- ═══ SHEET 7: THANK YOU | BACK COVER ═══ -->
+    <div class="sheet" data-index="7">
+      <div class="face front">
         <div class="page-inner">
-          <div class="cv-header">
-            <div class="cv-header-name">Aevibron</div>
-            <div class="cv-header-title">Founder & Lead AI Architect · Full-Stack Developer</div>
-            <div class="cv-header-contact">
-              <span><i class="fas fa-envelope" style="color:var(--primary)"></i> aevibron@gmail.com</span>
-              <span><i class="fas fa-phone" style="color:var(--primary)"></i> +254 116 903 500</span>
-              <span><i class="fas fa-globe" style="color:var(--primary)"></i> Nairobi, Kenya — Remote</span>
-            </div>
-          </div>
-
-          <div class="cv-metric-row">
-            <div class="cv-metric">
-              <span class="cv-metric-num counter-num" data-target="5">0</span>
-              <span class="cv-metric-label">Years Building</span>
-            </div>
-            <div class="cv-metric">
-              <span class="cv-metric-num counter-num" data-target="10">0</span>
-              <span class="cv-metric-label">Production Projects</span>
-            </div>
-            <div class="cv-metric">
-              <span class="cv-metric-num counter-num" data-target="1">0</span>
-              <span class="cv-metric-label">Million Req/Min</span>
-            </div>
-          </div>
-
-          <div class="cv-highlight-box">
-            <h4><i class="fas fa-user"></i> Professional Summary</h4>
-            <p>
-              Visionary AI architect and full-stack developer with a proven track record of building 
-              production-grade systems from scratch. Founded Aevibron (Infinite Vybeflix) and shipped 
-              multiple AI-powered products including an intelligent IDE, unlimited API gateway, autonomous 
-              AI engineer, and a 700+ command WhatsApp bot. Self-taught, relentlessly iterative, 
-              and obsessed with turning complex ideas into scalable reality.
-            </p>
-          </div>
-
-          <div class="cv-section">
-            <div class="cv-section-title"><i class="fas fa-bullseye"></i> Core Competencies</div>
-            <div class="cv-skills-grid">
-              <div class="cv-skill-cat">
-                <div class="cv-skill-cat-name">AI & LLMs</div>
-                <div class="cv-skill-tags">
-                  <span class="cv-skill-tag">OpenAI API</span>
-                  <span class="cv-skill-tag">Groq</span>
-                  <span class="cv-skill-tag">LLM Orchestration</span>
-                  <span class="cv-skill-tag">Prompt Engineering</span>
-                  <span class="cv-skill-tag">Agent Frameworks</span>
-                </div>
-              </div>
-              <div class="cv-skill-cat">
-                <div class="cv-skill-cat-name">Full-Stack</div>
-                <div class="cv-skill-tags">
-                  <span class="cv-skill-tag">React / Next.js</span>
-                  <span class="cv-skill-tag">Node.js</span>
-                  <span class="cv-skill-tag">Firebase</span>
-                  <span class="cv-skill-tag">REST / GraphQL</span>
-                  <span class="cv-skill-tag">WebSockets</span>
-                </div>
-              </div>
-              <div class="cv-skill-cat">
-                <div class="cv-skill-cat-name">Infrastructure</div>
-                <div class="cv-skill-tags">
-                  <span class="cv-skill-tag">Vercel</span>
-                  <span class="cv-skill-tag">API Gateway Design</span>
-                  <span class="cv-skill-tag">Rate Limiting</span>
-                  <span class="cv-skill-tag">Auth Systems</span>
-                  <span class="cv-skill-tag">Cloud Functions</span>
-                </div>
-              </div>
-              <div class="cv-skill-cat">
-                <div class="cv-skill-cat-name">Tools & DevOps</div>
-                <div class="cv-skill-tags">
-                  <span class="cv-skill-tag">Git / GitHub</span>
-                  <span class="cv-skill-tag">Figma</span>
-                  <span class="cv-skill-tag">Termux / Linux</span>
-                  <span class="cv-skill-tag">CI/CD</span>
-                  <span class="cv-skill-tag">Analytics</span>
-                </div>
-              </div>
+          <div class="thanks">
+            <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Aevibron-logo.jpg" alt="Aevibron">
+            <h2>Thank you for reading.</h2>
+            <div class="sub">Aevibron</div>
+            <div class="tagline">"Nothing is impossible."</div>
+            <div class="contact-line">
+              <a href="mailto:aevibron@gmail.com">aevibron@gmail.com</a> · <a href="https://wa.me/254116903500">+254 116 903 500</a>
             </div>
           </div>
         </div>
-        <div class="page-number right">12</div>
         <div class="corner" onclick="flipNext()"></div>
       </div>
-      <div class="face back page-left">
-        <div class="page-accent-bar"></div>
-        <div class="page-inner">
-          <div class="cv-section">
-            <div class="cv-section-title"><i class="fas fa-briefcase"></i> Professional Experience</div>
-
-            <div class="cv-item">
-              <div class="cv-item-header">
-                <span class="cv-item-title">Founder & Lead AI Architect</span>
-                <span class="cv-item-date">2024 — Present</span>
-              </div>
-              <div class="cv-item-sub">Aevibron / Infinite Vybeflix · Nairobi, Kenya (Remote)</div>
-              <div class="cv-item-desc">
-                Architected and shipped 5+ production AI products from zero. Built Nuvuja (AI IDE with console-aware debugging), 
-                Aevibron Gateway (handling 1M+ req/min), IRIS (autonomous deployment AI), Kaelum (Termux AI), 
-                and Maureonix (700+ command WhatsApp bot). Managed end-to-end product lifecycle, API infrastructure, 
-                and brand growth.
-              </div>
-            </div>
-
-            <div class="cv-item">
-              <div class="cv-item-header">
-                <span class="cv-item-title">Independent Full-Stack Developer</span>
-                <span class="cv-item-date">2023 — 2024</span>
-              </div>
-              <div class="cv-item-sub">Freelance & Open Source · Global Clients</div>
-              <div class="cv-item-desc">
-                Delivered custom full-stack applications, AI automations, and Firebase backends for international clients. 
-                Specialized in React dashboards, Node.js APIs, LLM integrations, and real-time data systems. 
-                Maintained 100% client satisfaction across 15+ projects.
-              </div>
-            </div>
-
-            <div class="cv-item">
-              <div class="cv-item-header">
-                <span class="cv-item-title">Self-Directed Software Engineer</span>
-                <span class="cv-item-date">2021 — 2023</span>
-              </div>
-              <div class="cv-item-sub">Continuous Learning & Building</div>
-              <div class="cv-item-desc">
-                Mastered modern JavaScript ecosystems, cloud architecture, and AI APIs through intensive self-study 
-                and hands-on building. Launched first production tools, contributed to open source, and established 
-                the technical foundation for the Aevibron ecosystem.
-              </div>
-            </div>
-          </div>
-
-          <div class="cv-section">
-            <div class="cv-section-title"><i class="fas fa-graduation-cap"></i> Education & Certifications</div>
-            <div class="cv-item">
-              <div class="cv-item-header">
-                <span class="cv-item-title">Mastery in AI Systems & Architecture</span>
-                <span class="cv-item-date">2021 — Present</span>
-              </div>
-              <div class="cv-item-sub">Self-Directed · Production-Grade Learning</div>
-              <div class="cv-item-desc">
-                Deep expertise in LLM orchestration, API gateway design, autonomous agent frameworks, 
-                and scalable full-stack deployment. Learned exclusively through shipping production systems.
-              </div>
-            </div>
-            <div class="cv-item">
-              <div class="cv-item-header">
-                <span class="cv-item-title">Advanced Software Engineering</span>
-                <span class="cv-item-date">2020 — 2021</span>
-              </div>
-              <div class="cv-item-sub">Intensive Bootcamp & Real-World Practice</div>
-              <div class="cv-item-desc">
-                Intensive training in React, Node.js, Firebase, REST API design, and cloud functions. 
-                Built 10+ portfolio projects from scratch including e-commerce and analytics dashboards.
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="page-number left">13</div>
-        <div class="corner-back" onclick="flipPrev()"></div>
-      </div>
-    </div>
-
-    <!-- ============================================ -->
-    <!-- SHEET 7: CV PAGE 3 (front) | BACK COVER (back) -->
-    <!-- ============================================ -->
-    <div class="sheet" style="z-index: 1;" data-index="7">
-      <div class="bookmark-ribbon"></div>
-      <div class="face front page-right">
-        <div class="page-accent-bar"></div>
-        <div class="page-inner">
-          <div class="cv-section">
-            <div class="cv-section-title"><i class="fas fa-project-diagram"></i> Key Projects</div>
-
-            <div class="cv-item">
-              <div class="cv-item-header">
-                <span class="cv-item-title">Nuvuja — AI-Powered IDE</span>
-                <span class="cv-item-date">Live</span>
-              </div>
-              <div class="cv-item-sub">React · Monaco Editor · AI APIs · WebSockets · Firebase</div>
-              <div class="cv-item-desc">
-                Intelligent code editor where AI writes, debugs, and fixes code in real-time. 
-                Features console integration, multi-file context, and live preview. 
-                <a href="https://nuvuja.vercel.app" target="_blank" style="color:var(--primary);">nuvuja.vercel.app</a>
-              </div>
-            </div>
-
-            <div class="cv-item">
-              <div class="cv-item-header">
-                <span class="cv-item-title">Aevibron Gateway — AI API Infrastructure</span>
-                <span class="cv-item-date">Live</span>
-              </div>
-              <div class="cv-item-sub">Node.js · Vercel · Auth · Rate Limiting · Analytics</div>
-              <div class="cv-item-desc">
-                Unlimited AI API gateway supporting 1M+ requests/minute. Provides image & text generation 
-                endpoints with granular key management and real-time monitoring. 
-                <a href="https://aevibron-gateway.vercel.app" target="_blank" style="color:var(--primary);">aevibron-gateway.vercel.app</a>
-              </div>
-            </div>
-
-            <div class="cv-item">
-              <div class="cv-item-header">
-                <span class="cv-item-title">IRIS — Autonomous AI Engineer</span>
-                <span class="cv-item-date">In Development</span>
-              </div>
-              <div class="cv-item-sub">AI Agents · Automation · DevOps</div>
-              <div class="cv-item-desc">
-                Fully autonomous AI that manages deployments, generates and rotates API keys, 
-                monitors system health, and handles the entire Aevibron infrastructure autonomously.
-              </div>
-            </div>
-
-            <div class="cv-item">
-              <div class="cv-item-header">
-                <span class="cv-item-title">Maureonix — WhatsApp AI Bot</span>
-                <span class="cv-item-date">Live</span>
-              </div>
-              <div class="cv-item-sub">Node.js · WhatsApp API · AI Integration</div>
-              <div class="cv-item-desc">
-                Feature-rich WhatsApp bot with 700+ working commands spanning utilities, 
-                entertainment, AI conversations, and system automation.
-              </div>
-            </div>
-          </div>
-
-          <div class="cv-section">
-            <div class="cv-section-title"><i class="fas fa-trophy"></i> Achievements & Recognition</div>
-            <div class="cv-item-desc" style="border-left:2px solid var(--accent);padding-left:10px;">
-              <strong>Built from zero to production</strong> — No formal CS degree. Every skill was forged through 
-              shipping real products used by real people. Architected systems handling millions of requests. 
-              Created a brand (Aevibron) that stands for "Nothing is impossible."
-            </div>
-          </div>
-
-          <div class="cv-highlight-box" style="margin-top:10px;">
-            <h4><i class="fas fa-quote-left"></i> Philosophy</h4>
-            <p style="font-style:italic;">
-              "I don't just write code — I architect ecosystems. Every line is a decision, 
-              every product is a statement. The future belongs to those who build it."
-            </p>
-          </div>
-        </div>
-        <div class="page-number right">14</div>
-        <div class="corner" onclick="flipNext()"></div>
-      </div>
-      <div class="face back back-cover-face">
-        <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Aevibron-logo.jpg" 
-             alt="Aevibron" class="cover-logo" style="width:80px;height:80px;margin-bottom:14px;" onerror="this.style.display='none'">
-        <div class="monogram">A</div>
-        <div class="cover-tagline">Thank you for reading.</div>
-        <div class="cover-name" style="font-size:1.3rem;margin-bottom:4px;">Aevibron</div>
-        <div class="cover-title" style="font-size:0.68rem;letter-spacing:3px;">Eternal Vibration Particle</div>
-        <div class="back-divider"></div>
-        <div class="back-quote">"Nothing is impossible."</div>
-        <div style="margin-top:18px;font-size:0.62rem;color:#64748b;">
-          <i class="fas fa-envelope" style="margin-right:5px;"></i>aevibron@gmail.com
-          <span style="margin:0 8px;">·</span>
-          <i class="fab fa-whatsapp" style="margin-right:5px;"></i>+254 116 903 500
-        </div>
+      <div class="face back back-cover">
+        <img src="https://raw.githubusercontent.com/luckyfelistine-bot/Infinite-vybeflix-portfolio/main/images/Aevibron-logo.jpg" alt="Aevibron">
+        <h3>Aevibron</h3>
+        <p>Eternal Vibration Particle</p>
+        <p style="margin-top:8px;font-size:.6rem;color:var(--muted)">Infinite Vybeflix · Portfolio 2026</p>
       </div>
     </div>
 
   </div><!-- /book -->
 </div><!-- /book-stage -->
 
-<!-- ===== CONTROLS ===== -->
+<!-- Controls -->
 <div class="controls">
-  <button class="control-btn" id="btnPrev" onclick="flipPrev()">
-    <i class="fas fa-chevron-left"></i> Previous
-  </button>
-  <button class="control-btn" id="btnNext" onclick="flipNext()">
-    Next <i class="fas fa-chevron-right"></i>
-  </button>
+  <button class="ctrl-btn" id="btnPrev" onclick="flipPrev()"><i class="fas fa-chevron-left"></i> Previous</button>
+  <span class="page-counter" id="pageCounter">0 / 7</span>
+  <button class="ctrl-btn" id="btnNext" onclick="flipNext()">Next <i class="fas fa-chevron-right"></i></button>
 </div>
-<div class="page-counter" id="pageCounter">0 / 8</div>
 
-<script src="script.js"></script>
+<script>
+/* ============================================
+   INFINITE VYBEFLIX — PORTFOLIO BOOK v3.0
+   Complete rebuild with fixed z-index,
+   dark theme, lightbox, no confetti
+   ============================================ */
+
+const sheets = document.querySelectorAll('.sheet');
+const totalSheets = sheets.length;
+let currentSheet = 0;
+let isFlipping = false;
+
+/* ─── LOADING ─── */
+function initLoad(){
+  const screen = document.getElementById('loading');
+  const pct = document.getElementById('loadpct');
+  let p = 0;
+  const iv = setInterval(()=>{
+    p += Math.floor(Math.random()*8)+2;
+    if(p>=100){p=100;clearInterval(iv);setTimeout(()=>{screen.classList.add('hidden');initType();},400);}
+    pct.textContent = p+'%';
+  },80);
+}
+
+/* ─── TYPING ─── */
+function initType(){
+  const text = "Building the future of AI infrastructure — from intelligent code editors to autonomous agents and unlimited API gateways.";
+  const el = document.getElementById('typeText');
+  if(!el)return;
+  let i=0;
+  function type(){if(i<text.length){el.innerHTML=text.substring(0,i+1)+'<span class="cblink"></span>';i++;setTimeout(type,35);}}
+  setTimeout(type,600);
+}
+
+/* ─── PARTICLES ─── */
+function initParticles(){
+  const c = document.getElementById('pCanvas');
+  const ctx = c.getContext('2d');
+  let pts = [];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  const count = Math.min(80,Math.floor(window.innerWidth/15));
+  for(let i=0;i<count;i++)pts.push({x:Math.random()*c.width,y:Math.random()*c.height,s:Math.random()*2+.5,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,o:Math.random()*.4+.1,col:Math.random()>.5?'56,189,248':'212,175,55'});
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    pts.forEach(p=>{
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>c.width||p.y<0||p.y>c.height){p.x=Math.random()*c.width;p.y=Math.random()*c.height;}
+      ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,Math.PI*2);ctx.fillStyle='rgba('+p.col+','+p.o+')';ctx.fill();
+    });
+    for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+      const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<120){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle='rgba(56,189,248,'+(0.06*(1-d/120))+')';ctx.lineWidth=.5;ctx.stroke();}
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+/* ─── CURSOR ─── */
+function initCursor(){
+  const dot = document.getElementById('cursor');
+  if(window.matchMedia('(pointer:coarse)').matches)return;
+  let x=0,y=0,tx=0,ty=0;
+  document.addEventListener('mousemove',e=>{tx=e.clientX;ty=e.clientY;});
+  document.addEventListener('mousedown',()=>dot.style.transform='translate(-50%,-50%) scale(0.8)');
+  document.addEventListener('mouseup',()=>dot.style.transform='translate(-50%,-50%) scale(1)');
+  function anim(){x+=(tx-x)*.15;y+=(ty-y)*.15;dot.style.left=x+'px';dot.style.top=y+'px';requestAnimationFrame(anim);}
+  anim();
+  const hoverTargets = document.querySelectorAll('a, button, .corner, .corner-back, .ctrl-btn, .zoom-img');
+  hoverTargets.forEach(el=>{el.addEventListener('mouseenter',()=>dot.classList.add('hover'));el.addEventListener('mouseleave',()=>dot.classList.remove('hover'));});
+}
+
+/* ─── LIGHTBOX ─── */
+function initLightbox(){
+  document.querySelectorAll('.zoom-img').forEach(img=>{
+    img.addEventListener('click',e=>{
+      e.stopPropagation();
+      const lb = document.getElementById('lightbox');
+      const lbimg = document.getElementById('lbimg');
+      lbimg.src = img.src;
+      lb.classList.add('on');
+    });
+  });
+}
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('on');
+}
+
+/* ─── Z-INDEX ─── */
+function updateZ(){
+  sheets.forEach((sheet,i)=>{
+    if(i<currentSheet) sheet.style.zIndex = i+1;
+    else sheet.style.zIndex = totalSheets - i;
+  });
+}
+
+/* ─── BOOK POSITION ─── */
+function updateBookPos(){
+  const book = document.getElementById('book');
+  if(currentSheet===0)book.classList.add('closed');
+  else book.classList.remove('closed');
+}
+
+/* ─── CONTROLS ─── */
+function updateControls(){
+  document.getElementById('btnPrev').disabled = currentSheet===0;
+  document.getElementById('btnNext').disabled = currentSheet===totalSheets;
+  document.getElementById('pageCounter').textContent = currentSheet+' / '+totalSheets;
+  // Animate skill bars when on skills page (sheet 2 back = currentSheet 3)
+  if(currentSheet===3){setTimeout(()=>{document.querySelectorAll('.sk-bar div').forEach(b=>{b.style.width=b.dataset.w+'%';});},400);}
+}
+
+/* ─── FLIP ─── */
+function flipNext(){
+  if(isFlipping||currentSheet>=totalSheets)return;
+  isFlipping=true;
+  const sheet = sheets[currentSheet];
+  sheet.style.zIndex = 1000; // Temp boost for animation
+  sheet.classList.add('flipped');
+  currentSheet++;
+  updateControls();
+  setTimeout(()=>{updateZ();updateBookPos();isFlipping=false;},750);
+}
+
+function flipPrev(){
+  if(isFlipping||currentSheet<=0)return;
+  isFlipping=true;
+  currentSheet--;
+  const sheet = sheets[currentSheet];
+  sheet.style.zIndex = 1000; // Temp boost for animation
+  sheet.classList.remove('flipped');
+  updateControls();
+  setTimeout(()=>{updateZ();updateBookPos();isFlipping=false;},750);
+}
+
+function goToPage(idx){
+  if(idx<0||idx>totalSheets||isFlipping)return;
+  if(idx>currentSheet){
+    let i=0;const iv=setInterval(()=>{if(i>=idx-currentSheet){clearInterval(iv);return;}flipNext();i++;},280);
+  }else if(idx<currentSheet){
+    let i=0;const iv=setInterval(()=>{if(i>=currentSheet-idx){clearInterval(iv);return;}flipPrev();i++;},280);
+  }
+}
+
+/* ─── KEYBOARD ─── */
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='Enter'){e.preventDefault();flipNext();}
+  if(e.key==='ArrowLeft'||e.key==='Backspace'){e.preventDefault();flipPrev();}
+  if(e.key==='Escape')closeLightbox();
+});
+
+/* ─── SWIPE ─── */
+let sx=0,sy=0;
+document.addEventListener('touchstart',e=>{sx=e.changedTouches[0].screenX;sy=e.changedTouches[0].screenY;},{passive:true});
+document.addEventListener('touchend',e=>{
+  const ex=e.changedTouches[0].screenX,dx=sx-ex,dy=Math.abs(sy-e.changedTouches[0].screenY);
+  if(Math.abs(dx)>50&&Math.abs(dx)>dy){if(dx>0)flipNext();else flipPrev();}
+},{passive:true});
+
+/* ─── WHATSAPP ─── */
+let waMode='prefill';
+function setWaMode(el){
+  document.querySelectorAll('.wa-opt').forEach(o=>o.classList.remove('active'));
+  el.classList.add('active');
+  waMode=el.dataset.mode;
+  document.getElementById('waPrefill').style.display=waMode==='prefill'?'flex':'none';
+  document.getElementById('waBtnText').textContent=waMode==='prefill'?'Open WhatsApp with Message':'Open WhatsApp Chat';
+}
+function openWhatsApp(){
+  const phone='254116903500';
+  if(waMode==='prefill'){
+    const name=document.getElementById('waName').value.trim();
+    const msg=document.getElementById('waMsg').value.trim();
+    if(msg){const full=name?"Hi, I'm "+name+". "+msg:msg;window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(full),'_blank');}
+    else{window.open('https://wa.me/'+phone,'_blank');}
+  }else{window.open('https://wa.me/'+phone,'_blank');}
+}
+
+/* ─── EMAIL ─── */
+function sendEmail(e){
+  e.preventDefault();
+  const name=document.getElementById('eName').value;
+  const email=document.getElementById('eEmail').value;
+  const msg=document.getElementById('eMsg').value;
+  const sub=encodeURIComponent('Portfolio Contact from '+name);
+  const body=encodeURIComponent('Name: '+name+'\nEmail: '+email+'\n\nMessage:\n'+msg);
+  window.location.href='mailto:aevibron@gmail.com?subject='+sub+'&body='+body;
+}
+
+/* ─── INIT ─── */
+document.addEventListener('DOMContentLoaded',()=>{
+  initLoad();
+  initParticles();
+  initCursor();
+  initLightbox();
+  updateZ();
+  updateBookPos();
+  updateControls();
+});
+</script>
 </body>
 </html>
