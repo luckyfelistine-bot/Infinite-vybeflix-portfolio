@@ -58,7 +58,7 @@ function updateScale() {
   const bookW = 840;
   const bookH = 960;
   const padX = 50;
-  const padY = 80;
+  const padY = 140;
   const scale = Math.min(1, (vw - padX) / bookW, (vh - padY) / bookH);
   document.documentElement.style.setProperty('--scale', scale);
 }
@@ -228,15 +228,19 @@ let tiltRAF = null;
 bookScaler.addEventListener('mousemove', (e) => {
   if (tiltRAF) cancelAnimationFrame(tiltRAF);
   tiltRAF = requestAnimationFrame(() => {
+    const currentScale = getComputedStyle(document.documentElement)
+      .getPropertyValue('--scale').trim() || 1;
     const rect = bookScaler.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
-    bookScaler.style.transform = `scale(var(--scale)) rotateY(${x * 4}deg) rotateX(${-y * 4}deg)`;
+    bookScaler.style.transform = `scale(${currentScale}) rotateY(${x * 4}deg) rotateX(${-y * 4}deg)`;
   });
 });
 
 bookScaler.addEventListener('mouseleave', () => {
-  bookScaler.style.transform = 'scale(var(--scale)) rotateY(0deg) rotateX(0deg)';
+  const currentScale = getComputedStyle(document.documentElement)
+    .getPropertyValue('--scale').trim() || 1;
+  bookScaler.style.transform = `scale(${currentScale}) rotateY(0deg) rotateX(0deg)`;
 });
 
 /* ═══════ SKILL TAG ANIMATION ═══════ */
