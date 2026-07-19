@@ -482,6 +482,12 @@ html, body {
   margin-bottom: 12px;
   line-height: 1.3;
 }
+.page-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
 
 .page-subtitle {
   font-family: 'Cormorant Garamond', serif;
@@ -1309,17 +1315,6 @@ html, body {
 /* ═══════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════ */
-@media (max-width: 900px) {
-  .book-scaler { --scale: calc((100vw - 40px) / 840); }
-}
-@media (max-width: 600px) {
-  .book-scaler { --scale: calc((100vw - 16px) / 840); }
-  .nav-dots { padding: 8px 14px; gap: 6px; }
-  .page-content { inset: 40px 28px 50px 28px; }
-}
-@media (max-width: 400px) {
-  .book-scaler { --scale: calc((100vw - 8px) / 840); }
-}
 
 @media (pointer: coarse) {
   body { cursor: auto; }
